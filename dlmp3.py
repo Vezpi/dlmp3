@@ -83,80 +83,68 @@ zcomp = lambda v: zlib.compress(pickle.dumps(v, protocol=2), 9)
 zdecomp = lambda v: pickle.loads(zlib.decompress(v))
 
 
-def get_default_ddir():
+def get_default_dldir():
     """ Get system default Download directory, append mps dir. """
 
     join, user = os.path.join, os.path.expanduser("~")
 
-    # if mswin:
-    #     #return os.path.join(os.path.expanduser("~"), "Downloads", "mps")
-    #     return join(user, "Downloads", "pms")
-
     USER_DIRS = join(user, ".config", "user-dirs.dirs")
-    DOWNLOAD_HOME = join(user, "Downloads")
+    # DOWNLOAD_HOME = join(user, "Downloads")
 
-    if 'XDG_DOWNLOAD_DIR' in os.environ:
-        ddir = os.environ['XDG_DOWNLOAD_DIR']
+    # if 'XDG_DOWNLOAD_DIR' in os.environ:
+    #     dldir = os.environ['XDG_DOWNLOAD_DIR']
 
-    elif os.path.exists(USER_DIRS):
+    if os.path.exists(USER_DIRS):
         lines = open(USER_DIRS).readlines()
-        defn = [x for x in lines if x.startswith("XDG_DOWNLOAD_DIR")]
+        defn = [x for x in lines ]
 
         if len(defn) == 0:
-            ddir = user
+            dldir = user
 
         else:
-            ddir = defn[0].split("=")[1]\
+            dldir = defn[0].split("=")[1]\
                 .replace('"', '')\
                 .replace("$HOME", user).strip()
 
-    elif os.path.exists(DOWNLOAD_HOME):
-        ddir = DOWNLOAD_HOME
+    # elif os.path.exists(DOWNLOAD_HOME):
+    #     dldir = DOWNLOAD_HOME
     else:
-        ddir = user
+        dldir = user
 
-    ddir = py2utf8_decode(ddir)
-    return join(ddir, "mps")
+    dldir = py2utf8_decode(dldir)
+    return join(dldir, "dlmp3")
 
 
 def get_config_dir():
     """ Get user configuration directory.  Create if needed. """
 
-    # if mswin:
-    #     # AppData\Roaming on Windows 7
-    #     confd = os.environ["APPDATA"]
-    # else:
     # if "XDG_CONFIG_HOME" in os.environ:
     #     confd = os.environ["XDG_CONFIG_HOME"]
     # else:
     #     confd = os.path.join(os.environ["HOME"], ".config")
 
     # oldd = os.path.join(confd, "pms")
-    mpsd = "/etc/dlmp3"
+    confd = "/etc/dlmp3"
 
-    # if os.path.exists(oldd) and not os.path.exists(mpsd):
-    #     os.rename(oldd, mpsd)
+    # if os.path.exists(oldd) and not os.path.exists(confd):
+    #     os.rename(oldd, confd)
 
-    if not os.path.exists(mpsd):
-        os.makedirs(mpsd)
+    if not os.path.exists(confd):
+        os.makedirs(confd)
 
-    return mpsd
+    return confd
 
 
 class Config(object):
 
     """ Holds various configuration values. """
 
-    # PLAYER = "mplayer"
-    # PLAYERARGS = "-nolirc -prefer-ipv4"
-    # COLOURS = False if mswin and not has_colorama else True
     COLOURS = True
-    # CHECKUPDATE = True
-    # SHOW_MPLAYER_KEYS = True
-    DDIR = get_default_ddir()
+    DLDIR = get_default_dldir()
+    CONFDIR = get_config_dir()
 
 
-if os.environ.get("mpsdebug") == '1':
+if os.environ.get("confdebug") == '1':
 
     logfile = os.path.join(tempfile.gettempdir(), "mps.log")
     logging.basicConfig(level=logging.DEBUG, filename=logfile)
@@ -293,7 +281,7 @@ class g(object):
     model = Playlist(name="model")
     last_search_query = ""
     current_page = 1
-    active = Playlist(name="active")
+    # active = Playlist(name="active")
     noblank = False
     text = {}
     userpl = {}
@@ -302,7 +290,7 @@ class g(object):
     configbool = [x for x in config if type(getattr(Config, x)) is bool]
     defaults = {setting: getattr(Config, setting) for setting in config}
     CFFILE = os.path.join(get_config_dir(), "config")
-    PLFILE = os.path.join(get_config_dir(), "playlist")
+    # PLFILE = os.path.join(get_config_dir(), "playlist")
     memo = Memo(os.path.join(get_config_dir(), "cache" + sys.version[0:5]))
     OLD_CFFILE = os.path.join(os.path.expanduser("~"), ".pms-config")
     OLD_PLFILE = os.path.join(os.path.expanduser("~"), ".pms-playlist")
@@ -329,12 +317,12 @@ def saveconfig():
     pickle.dump(config, open(g.CFFILE, "wb"), protocol=2)
 
 
-def clearcache():
-    """ Clear the cache. """
-    g.memo.data = {}
-    g.memo.save()
-    g.content = generate_songlist_display()
-    g.message = c.r + "Cache cleared!" + c.w
+# def clearcache():
+#     """ Clear the cache. """
+#     g.memo.data = {}
+#     g.memo.save()
+#     g.content = generate_songlist_display()
+#     g.message = c.r + "Cache cleared!" + c.w
 
 
 # override config if config file exists
@@ -398,7 +386,7 @@ def setconfig(key, val):
             setattr(Config, k, v)
             success_msg = "Default configuration reinstated"
 
-    elif key == "DDIR" and not val.upper() == "DEFAULT":
+    elif key == "DLDIR" and not val.upper() == "DEFAULT":
 
         valid = os.path.exists(val) and os.path.isdir(val)
 
@@ -802,56 +790,56 @@ def get_stream(song, force=False):
 
 
 
-def get_length(song):
-    """ Return song length in seconds. """
+# def get_length(song):
+#     """ Return song length in seconds. """
 
-    d = song['duration']
-    return sum(int(x) * 60 ** n for n, x in enumerate(reversed(d.split(":"))))
-
-
-def writestatus(text):
-    """ Update status line. """
-
-    spaces = 75 - len(text)
-    sys.stdout.write(" " + text + (" " * spaces) + "\r")
-    sys.stdout.flush()
+#     d = song['duration']
+#     return sum(int(x) * 60 ** n for n, x in enumerate(reversed(d.split(":"))))
 
 
-def make_status_line(match_object, songlength=0, volume=None,
-                     progress_bar_size=60):
-    """ Format progress line output.  """
+# def writestatus(text):
+#     """ Update status line. """
 
-    try:
-        elapsed_s = int(match_object.group('elapsed_s') or '0')
+#     spaces = 75 - len(text)
+#     sys.stdout.write(" " + text + (" " * spaces) + "\r")
+#     sys.stdout.flush()
 
-    except ValueError:
-        return ""
 
-    display_s = elapsed_s
-    display_m = 0
+# def make_status_line(match_object, songlength=0, volume=None,
+#                      progress_bar_size=60):
+#     """ Format progress line output.  """
 
-    if elapsed_s >= 60:
-        display_m = display_s // 60
-        display_s %= 60
+#     try:
+#         elapsed_s = int(match_object.group('elapsed_s') or '0')
 
-    pct = (float(elapsed_s) / songlength * 100) if songlength else 0
+#     except ValueError:
+#         return ""
 
-    status_line = "%02i:%02i %s" % (display_m, display_s,
-                                    ("[%.0f%%]" % pct).ljust(6)
-                                    )
+#     display_s = elapsed_s
+#     display_m = 0
 
-    if volume:
-        progress_bar_size -= 10
-        vol_suffix = " vol: %d%%  " % volume
+#     if elapsed_s >= 60:
+#         display_m = display_s // 60
+#         display_s %= 60
 
-    else:
-        vol_suffix = ""
+#     pct = (float(elapsed_s) / songlength * 100) if songlength else 0
 
-    progress = int(math.ceil(pct / 100 * progress_bar_size))
-    status_line += " [%s]" % ("=" * (progress - 1) +
-                              ">").ljust(progress_bar_size)
-    status_line += vol_suffix
-    return status_line
+#     status_line = "%02i:%02i %s" % (display_m, display_s,
+#                                     ("[%.0f%%]" % pct).ljust(6)
+#                                     )
+
+#     if volume:
+#         progress_bar_size -= 10
+#         vol_suffix = " vol: %d%%  " % volume
+
+#     else:
+#         vol_suffix = ""
+
+#     progress = int(math.ceil(pct / 100 * progress_bar_size))
+#     status_line += " [%s]" % ("=" * (progress - 1) +
+#                               ">").ljust(progress_bar_size)
+#     status_line += vol_suffix
+#     return status_line
 
 
 def top(period, page=1):
@@ -1216,12 +1204,12 @@ def _do_query(url, query, err='query failed', cache=True, report=False):
 def _make_fname(song):
     """" Create download directory, generate filename. """
 
-    if not os.path.exists(Config.DDIR):
-        os.makedirs(Config.DDIR)
+    if not os.path.exists(Config.DLDIR):
+        os.makedirs(Config.DLDIR)
 
     filename = song['singer'][:49] + " - " + song['song'][:49] + ".mp3"
-    # filename = os.path.join(Config.DDIR, mswinfn(filename.replace("/", "-")))
-    filename = os.path.join(Config.DDIR, filename)
+    # filename = os.path.join(Config.DLDIR, mswinfn(filename.replace("/", "-")))
+    filename = os.path.join(Config.DLDIR, filename)
     return filename
 
 
@@ -1403,16 +1391,18 @@ def main():
 #    word = r'[^\W\d][-\w\s]{,100}'
 #    rs = r'(?:repeat\s*|shuffle\s*)'
     regx = {
-        # 'ls': r'ls$',
-        # 'vp': r'vp$',
+
         'show_help': r'h$',
         'search': r'([a-zA-Z]\w.{0,500})',
         'search_album': r'a\s*(.{0,500})',
         'download': r'(\d{1,2})$',
+        'nextprev': r'(n|p)$',
         'top': r't\s*(|3m|6m|year|all)\s*$',
         'showconfig': r'(c)$',
         'setconfig': r'c\s*(\w+)\s*"?([^"]*)"?\s*$',
         'quits': r'(?:q|quit|exit)$',
+                # 'ls': r'ls$',
+        # 'vp': r'vp$',
 #        'plist': r'.*(list[\da-zA-Z]{8,14})$',
 #        'play': r'(%s{0,3})([-,\d\s]{1,250})\s*(%s{0,2})$' % (rs, rs),
         # 'top': r'top(|3m|6m|year|all)\s*$',
@@ -1421,7 +1411,7 @@ def main():
 #        'play_pl': r'play\s*(%s|\d+)$' % word,
         # 'download': r'(?:d|dl|download)\s*(\d{1,4})$',
         
-#        'nextprev': r'(n|p)$',
+#        
 #        'play_all': r'(%s{0,3})all\s*(%s{0,3})$' % (rs, rs),
 #        'save_last': r'(save)\s*$',
         #'setconfig': r'set\s*(\w+)\s*"([^"]*)"\s*$',
