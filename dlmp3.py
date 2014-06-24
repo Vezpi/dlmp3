@@ -1,26 +1,5 @@
 #!/usr/bin/env python
 # coding: utf-8
-"""
-mps.
-
-https://github.com/np1/mps
-
-Copyright (C)  2013-2014 nagev
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-"""
 
 from __future__ import print_function
 
@@ -295,6 +274,7 @@ class g(object):
     OLD_CFFILE = os.path.join(os.path.expanduser("~"), ".pms-config")
     OLD_PLFILE = os.path.join(os.path.expanduser("~"), ".pms-playlist")
     READLINE_FILE = None
+    HELPFILE= os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "HELP")
 
 
 def showconfig(_):
@@ -315,15 +295,6 @@ def saveconfig():
 
     config = {setting: getattr(Config, setting) for setting in g.config}
     pickle.dump(config, open(g.CFFILE, "wb"), protocol=2)
-
-
-# def clearcache():
-#     """ Clear the cache. """
-#     g.memo.data = {}
-#     g.memo.save()
-#     g.content = generate_songlist_display()
-#     g.message = c.r + "Cache cleared!" + c.w
-
 
 # override config if config file exists
 def loadconfig(pfile):
@@ -353,16 +324,6 @@ class c(object):
 
     """ Class for holding colour code values. """
 
-    # if mswin and has_colorama:
-    #     white = Style.RESET_ALL
-    #     ul = Style.DIM + Fore.YELLOW
-    #     red, green, yellow = Fore.RED, Fore.GREEN, Fore.YELLOW
-    #     blue, pink = Fore.CYAN, Fore.MAGENTA
-
-    # elif mswin:
-    #     Config.COLOURS = False
-
-    # else:
     white = "\x1b[%sm" % 0
     ul = "\x1b[%sm" * 3 % (2, 4, 33)
     cols = ["\x1b[%sm" % n for n in range(91, 96)]
@@ -403,9 +364,6 @@ def setconfig(key, val):
             setattr(Config, key, False)
             success_msg = "%s set to disabled (restart may be required)" % key
 
-        # elif key == "COLOURS" and mswin and not has_colorama:
-        #     fail_msg = "Can't enable colours, colorama not found"
-
         else:
             setattr(Config, key, True)
             success_msg = "%s set to enabled (restart may be required)" % key
@@ -430,34 +388,34 @@ def setconfig(key, val):
     elif fail_msg:
         g.message = fail_msg
 
-# "[h]elp, [a]lbum, [t]op, [c]config, [q]uit"
 HELP = """
 {0}Rercherche{1}
 Entrer le nom d'un artiste, le nom d'une chanson, les deux ensemble,
 ou simplement des mots clés pour la recherche.
-Si la recherche ne retourne pas ce que vous voulez, ajouter +tous
-pour rechercher toutes les qualités de son
+Si la recherche ne retourne pas ce que vous voulez, ajouter {2}+tous{1}
+pour rechercher dans toutes les qualités de son.
+Utiliser {2}n{1} et {2}p{1} pour naviguer parmis les differentes pages.
 
 {0}Rercherche d'album{1}
-Entrer "a" + le nom d'un album pour le rechercher.
+Entrer {2}a +{1} le nom d'un album pour le rechercher.
 
 {0}Téléchargement{1}
 Quand une liste de musiques est affiché à l'écran, entrer le numéro
 de la chanson correspondante pour la télécharger.
 
 {0}Top{1}
-Entrer "t" (+ 3m, 6m, year, all) pour afficher le top charts associé.
+Entrer {2}t{1} ({2}+ 3m{1}, {2}6m{1}, {2}year{1}, {2}all{1}) pour afficher le top charts associé.
 Defaut : Semaine
-3m : 3 mois
-6m : 6 mois
-year : annuel
-all : de tout les temps
+{2}3m{1} : 3 mois
+{2}6m{1} : 6 mois
+{2}year{1} : annuel
+{2}all{1} : de tout les temps
 
 {0}Configuration{1}
-Entrer "c" pour afficher la configuration.
+Entrer {2}c{1} pour afficher la configuration.
 
 {0}Quitter{1}
-Entrer "q" pour quitter.
+Entrer {2}q{1} pour quitter.
 """.format(c.ul, c.w, c.g, c.r)
 
 
@@ -552,48 +510,6 @@ Released under the GPLv3 license
     'songs rm': '*&&* tracks removed &&',
     'songs rm_': (c.y, c.w)
 }
-
-
-# def save_to_file():
-#     """ Save playlists.  Called each time a playlist is saved or deleted. """
-
-#     f = open(g.PLFILE, "wb")
-#     pickle.dump(g.userpl, f, protocol=2)
-
-
-# def load_playlist(pfile):
-#     """ Load pickled playlist file. """
-
-#     try:
-#         f = open(pfile, "rb")
-#         g.userpl = pickle.load(f)
-
-#     except IOError:
-#         g.userpl = {}
-#         save_to_file()
-
-
-# def open_from_file():
-#     """ Open playlists. Called once on script invocation. """
-
-#     if os.path.exists(g.PLFILE):
-#         load_playlist(g.PLFILE)
-
-#     elif os.path.exists(g.OLD_PLFILE):
-#         load_playlist(g.OLD_PLFILE)
-#         save_to_file()
-#         os.remove(g.OLD_PLFILE)
-
-#     else:
-#         g.userpl = {}
-#         save_to_file()
-
-
-# def logo(col=None, version=""):
-#     """ Return text logo. """
-
-#     LOGO = c.r +"SUPPRIME CETTE LIGNE"
-#     return LOGO + c.w
 
 
 def tidy(raw, field):
@@ -789,59 +705,6 @@ def get_stream(song, force=False):
         return song['track_url']
 
 
-
-# def get_length(song):
-#     """ Return song length in seconds. """
-
-#     d = song['duration']
-#     return sum(int(x) * 60 ** n for n, x in enumerate(reversed(d.split(":"))))
-
-
-# def writestatus(text):
-#     """ Update status line. """
-
-#     spaces = 75 - len(text)
-#     sys.stdout.write(" " + text + (" " * spaces) + "\r")
-#     sys.stdout.flush()
-
-
-# def make_status_line(match_object, songlength=0, volume=None,
-#                      progress_bar_size=60):
-#     """ Format progress line output.  """
-
-#     try:
-#         elapsed_s = int(match_object.group('elapsed_s') or '0')
-
-#     except ValueError:
-#         return ""
-
-#     display_s = elapsed_s
-#     display_m = 0
-
-#     if elapsed_s >= 60:
-#         display_m = display_s // 60
-#         display_s %= 60
-
-#     pct = (float(elapsed_s) / songlength * 100) if songlength else 0
-
-#     status_line = "%02i:%02i %s" % (display_m, display_s,
-#                                     ("[%.0f%%]" % pct).ljust(6)
-#                                     )
-
-#     if volume:
-#         progress_bar_size -= 10
-#         vol_suffix = " vol: %d%%  " % volume
-
-#     else:
-#         vol_suffix = ""
-
-#     progress = int(math.ceil(pct / 100 * progress_bar_size))
-#     status_line += " [%s]" % ("=" * (progress - 1) +
-#                               ">").ljust(progress_bar_size)
-#     status_line += vol_suffix
-#     return status_line
-
-
 def top(period, page=1):
     """ Get top music for period, returns songs list."""
 
@@ -861,7 +724,6 @@ def top(period, page=1):
 
     except (URLError, HTTPError) as e:
         g.message = F('no data') % e
-        # g.content = logo(c.r)
         return
 
     dbg("fetched " + url)
@@ -871,15 +733,12 @@ def top(period, page=1):
     g.content = generate_songlist_display()
 
 
-def search(term, page=1, splash=True):
+def search(term, page=1):
     """ Perform search. """
 
     if not term or len(term) < 2:
         g.message = c.r + "Not enough input" + c.w
         g.content = generate_songlist_display()
-
-    # elif term == "albumsearch":
-    #     return
 
     else:
         original_term = term
@@ -901,8 +760,7 @@ def search(term, page=1, splash=True):
             songs = g.memo.get(url)
 
         else:
-            if splash:
-                screen_update()
+            screen_update()
 
             try:
                 wdata = urlopen(url).read().decode("utf8")
@@ -1208,7 +1066,6 @@ def _make_fname(song):
         os.makedirs(Config.DLDIR)
 
     filename = song['singer'][:49] + " - " + song['song'][:49] + ".mp3"
-    # filename = os.path.join(Config.DLDIR, mswinfn(filename.replace("/", "-")))
     filename = os.path.join(Config.DLDIR, filename)
     return filename
 
@@ -1350,7 +1207,7 @@ def nextprev(np):
     if np == "n":
         if len(g.model.songs) == 20 and g.last_search_query:
             g.current_page += 1
-            search(g.last_search_query, g.current_page, splash=False)
+            search(g.last_search_query, g.current_page)
             g.message += " : page %s" % g.current_page
 
         else:
@@ -1359,7 +1216,7 @@ def nextprev(np):
     elif np == "p":
         if g.current_page > 1 and g.last_search_query:
             g.current_page -= 1
-            search(g.last_search_query, g.current_page, splash=False)
+            search(g.last_search_query, g.current_page)
             g.message += " : page %s" % g.current_page
 
         else:
@@ -1376,22 +1233,16 @@ def main():
 
     # update screen
     g.content = generate_songlist_display()
-#    g.content = logo(col=c.g, version=__version__) + "\n"
+
     if not sys.argv[1:]:
     	g.message = "Rechercher la musique que vous voulez " + c.b + "- [h]elp, [a]lbum, [t]op, [c]config, [q]uit" + c.w
     screen_update()
-
-    # open playlists from file
-    # open_from_file()
 
     # get cmd line input
     inp = " ".join(sys.argv[1:])
 
     # input types
-#    word = r'[^\W\d][-\w\s]{,100}'
-#    rs = r'(?:repeat\s*|shuffle\s*)'
     regx = {
-
         'show_help': r'h$',
         'search': r'([a-zA-Z]\w.{0,500})',
         'search_album': r'a\s*(.{0,500})',
@@ -1401,34 +1252,6 @@ def main():
         'showconfig': r'(c)$',
         'setconfig': r'c\s*(\w+)\s*"?([^"]*)"?\s*$',
         'quits': r'(?:q|quit|exit)$',
-                # 'ls': r'ls$',
-        # 'vp': r'vp$',
-#        'plist': r'.*(list[\da-zA-Z]{8,14})$',
-#        'play': r'(%s{0,3})([-,\d\s]{1,250})\s*(%s{0,2})$' % (rs, rs),
-        # 'top': r'top(|3m|6m|year|all)\s*$',
-######  'search': r'(?:search|\.|/)\s*(.{0,500})',
-        
-#        'play_pl': r'play\s*(%s|\d+)$' % word,
-        # 'download': r'(?:d|dl|download)\s*(\d{1,4})$',
-        
-#        
-#        'play_all': r'(%s{0,3})all\s*(%s{0,3})$' % (rs, rs),
-#        'save_last': r'(save)\s*$',
-        #'setconfig': r'set\s*(\w+)\s*"([^"]*)"\s*$',
-        
-        
-#        'add_rm_all': r'(rm|add)\s*all$',
-#        'clearcache': r'clearcache$',
-        #'showconfig': r'(showconfig)',
-        
-#        'playlist_add': r'add\s*(-?\d[-,\d\s]{1,250})(%s)$' % word,
-#        'open_save_view': r'(open|save|view)\s*(%s)$' % word,
-#        'songlist_mv_sw': r'(mv|sw)\s*(\d{1,4})\s*[\s,]\s*(\d{1,4})$',
-#        'songlist_rm_add': r'(rm|add)\s*(-?\d[-,\d\s]{,250})$',
-#        'playlist_rename': r'mv\s*(%s\s+%s)$' % (word, word),
-#        'playlist_remove': r'rmp\s*(\d+|%s)$' % word,
-#        'open_view_bynum': r'(open|view)\s*(\d{1,4})$',
-#        'playlist_rename_idx': r'mv\s*(\d{1,3})\s*(%s)\s*$' % word,
     }
 
     # compile regexp's
@@ -1440,7 +1263,6 @@ def main():
             # get user input
             userinput = inp or compat_input(prompt)
             userinput = userinput.strip()
-#            print(c.w)
 
         except (KeyboardInterrupt, EOFError):
             userinput = prompt_for_exit()
@@ -1456,7 +1278,6 @@ def main():
 
                 except IndexError:
                     g.message = F('invalid range')
-                    # g.content = g.content #or generate_songlist_display()
 
                 break
 
