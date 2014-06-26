@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-# coding: utf-8
+#! /usr/bin/python
+# -*- coding:utf-8 -*-
 
 from __future__ import print_function
-
 
 __license__ = "GPLv3"
 
@@ -11,7 +10,6 @@ import unicodedata
 import subprocess
 import tempfile
 import logging
-import hashlib
 import difflib
 import random
 import socket
@@ -143,120 +141,15 @@ opener.addheaders = [("User-Agent", ua)]
 urlopen = opener.open
 
 
-class Memo(object):
-
-    """ Memo handling and creation. """
-
-    def __init__(self, filepath, life=60 * 60 * 24 * 3):
-        self.life = life
-        self.filepath = filepath
-        self.data = {}
-
-        if os.path.isfile(filepath):
-
-            try:
-
-                with open(filepath, "rb") as f:
-                    self.data = pickle.load(f)
-                    dbg("cache opened, %s items", len(self.data))
-
-            except (EOFError, IOError) as e:
-                dbg(str(e))
-
-        else:
-            dbg("No cache found!")
-
-        self.prune()
-
-    def add(self, key, val, lifespan=None):
-        """ Add key value pair, expire in lifespan seconds. """
-
-        key = key.encode("utf8")
-        key = hashlib.sha1(key).hexdigest()
-        lifespan = self.life if not lifespan else lifespan
-        expiry_time = int(time.time()) + lifespan
-        self.data[key] = dict(expire=expiry_time, data=zcomp(val))
-        dbg("cache item added: %s", key)
-
-    def get(self, key):
-        """ Fetch a value if it exists and is fresh. """
-
-        now = int(time.time())
-        key = key.encode("utf8")
-        key = hashlib.sha1(key).hexdigest()
-
-        if key in self.data:
-
-            if self.data[key]['expire'] > now:
-                dbg("cache hit %s", key)
-                return zdecomp(self.data[key]['data'])
-
-            else:
-                del self.data[key]
-                return None
-
-        return None
-
-    def prune(self):
-        """ Remove stale items. """
-
-        now = int(time.time())
-        dbg("Pruning: ")
-        stalekeys = [x for x in self.data if self.data[x]['expire'] < now]
-        dbg("%s stale keys; %s total kys", len(stalekeys), len(self.data))
-
-        for x in stalekeys:
-            del self.data[x]
-
-    def save(self):
-        """ Save memo file to persistent storage. """
-
-        self.prune()
-
-        with open(self.filepath, "wb") as f:
-            pickle.dump(self.data, f, protocol=2)
-
-
-class Playlist(object):
-
-    """ Representation of a playist, has list of songs. """
-
-    def __init__(self, name=None, songs=None):
-        self.name = name
-        self.creation = time.time()
-        self.songs = songs or []
-
-    @property
-    def is_empty(self):
-        """ Return True / False if songs are populated or not. """
-
-        return bool(not self.songs)
-
-    @property
-    def size(self):
-        """ Return number of tracks. """
-
-        return len(self.songs)
-
-    @property
-    def duration(self):
-        """ Sum duration of the playlist. """
-
-        duration = 0
-
-        for song in self.songs:
-            duration += int(song['Rduration'])
-
-        duration = time.strftime('%H:%M:%S', time.gmtime(int(duration)))
-        return duration
-
-
 class g(object):
 
     """ Class for holding globals that are needed throught the module. """
 
+    from dlmp3 import memo
+    from dlmp3 import playlist
+
     album_tracks_bitrate = 320
-    model = Playlist(name="model")
+    model = playlist.Playlist(name="model")
     last_search_query = ""
     current_page = 1
     # active = Playlist(name="active")
@@ -269,11 +162,12 @@ class g(object):
     defaults = {setting: getattr(Config, setting) for setting in config}
     CFFILE = os.path.join(get_config_dir(), "config")
     # PLFILE = os.path.join(get_config_dir(), "playlist")
-    memo = Memo(os.path.join(get_config_dir(), "cache" + sys.version[0:5]))
+    from dlmp3 import memo
+    memo = memo.Memo(os.path.join(get_config_dir(), "cache" + sys.version[0:5]))
     OLD_CFFILE = os.path.join(os.path.expanduser("~"), ".pms-config")
     OLD_PLFILE = os.path.join(os.path.expanduser("~"), ".pms-playlist")
     READLINE_FILE = None
-    HELPFILE= os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "HELP")
+    # HELPFILE= os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "HELP")
 
 
 def showconfig(_):
