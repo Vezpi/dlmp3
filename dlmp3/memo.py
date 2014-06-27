@@ -1,8 +1,14 @@
+#! /usr/bin/python
+# -*- coding:utf-8 -*-
+
 import os
 import pickle
 import hashlib
 import time
-from core import zdecomp, zcomp
+import zlib
+
+zcomp = lambda v: zlib.compress(pickle.dumps(v, protocol=2), 9)
+zdecomp = lambda v: pickle.loads(zlib.decompress(v))
 
 class Memo(object):
 
@@ -15,17 +21,8 @@ class Memo(object):
 
         if os.path.isfile(filepath):
 
-            # try:
-
             with open(filepath, "rb") as f:
                 self.data = pickle.load(f)
-            #         dbg("cache opened, %s items", len(self.data))
-
-            # except (EOFError, IOError) as e:
-            #     dbg(str(e))
-
-        # else:
-        #     dbg("No cache found!")
 
         self.prune()
 

@@ -7,35 +7,19 @@ __license__ = "GPLv3"
 
 import xml.etree.ElementTree as ET
 import unicodedata
-import subprocess
-import tempfile
-import logging
 import difflib
 import random
 import socket
-import zlib
 import time
-import math
 import json
 import sys
 import re
 import os
 
-try:
-    # pylint: disable=F0401
-    from colorama import init as init_colorama, Fore, Style
-    has_colorama = True
-
-except ImportError:
-    has_colorama = False
-
-
 # Python 3 compatibility hack
-
 if sys.version_info[:2] >= (3, 0):
     # pylint: disable=E0611,F0401
-    import pickle
-    from urllib.request import build_opener
+    # import pickle
     from urllib.error import HTTPError, URLError
     from urllib.parse import urlencode
     py2utf8_encode = lambda x: x
@@ -43,243 +27,46 @@ if sys.version_info[:2] >= (3, 0):
     compat_input = input
 
 else:
-    from urllib2 import build_opener, HTTPError, URLError
+    from urllib2 import HTTPError, URLError
     from urllib import urlencode
-    import cPickle as pickle
+    # import cPickle as pickle
     py2utf8_encode = lambda x: x.encode("utf8") if type(x) == unicode else x
     py2utf8_decode = lambda x: x.decode("utf8") if type(x) == str else x
     compat_input = raw_input
 
-# mswin = os.name == "nt"
-# non_utf8 = mswin or not "UTF-8" in os.environ.get("LANG", "")
-non_utf8 = not "UTF-8" in os.environ.get("LANG", "")
+import config
+from config import g
+from color import c
 
-member_var = lambda x: not(x.startswith("__") or callable(x))
-zcomp = lambda v: zlib.compress(pickle.dumps(v, protocol=2), 9)
-zdecomp = lambda v: pickle.loads(zlib.decompress(v))
+def F(key, nb=0, na=0, percent=r"\*", nums=r"\*\*", textlib=None):
+    """Format text.
 
+    nb, na indicate newlines before and after to return
+    percent is the delimter for %s
+    nums is the delimiter for the str.format command (**1 will become {1})
+    textlib is the dictionary to use (defaults to g.text if not given)
 
-def get_default_dldir():
-    """ Get system default Download directory, append mps dir. """
+    """
 
-    join, user = os.path.join, os.path.expanduser("~")
+    textlib = textlib or g.text
 
-    USER_DIRS = join(user, ".config", "user-dirs.dirs")
-    # DOWNLOAD_HOME = join(user, "Downloads")
+    assert key in textlib
+    text = textlib[key]
+    percent_fmt = textlib.get(key + "_")
+    number_fmt = textlib.get("_" + key)
 
-    # if 'XDG_DOWNLOAD_DIR' in os.environ:
-    #     dldir = os.environ['XDG_DOWNLOAD_DIR']
+    if number_fmt:
+        text = re.sub(r"(%s(\d))" % nums, "{\\2}", text)
+        text = text.format(*number_fmt)
 
-    if os.path.exists(USER_DIRS):
-        lines = open(USER_DIRS).readlines()
-        defn = [x for x in lines ]
+    if percent_fmt:
+        text = re.sub(r"%s" % percent, r"%s", text)
+        text = text % percent_fmt
 
-        if len(defn) == 0:
-            dldir = user
+    text = re.sub(r"&&", r"%s", text)
 
-        else:
-            dldir = defn[0].split("=")[1]\
-                .replace('"', '')\
-                .replace("$HOME", user).strip()
+    return "\n" * nb + text + c.w + "\n" * na
 
-    # elif os.path.exists(DOWNLOAD_HOME):
-    #     dldir = DOWNLOAD_HOME
-    else:
-        dldir = user
-
-    dldir = py2utf8_decode(dldir)
-    return join(dldir, "dlmp3")
-
-
-def get_config_dir():
-    """ Get user configuration directory.  Create if needed. """
-
-    # if "XDG_CONFIG_HOME" in os.environ:
-    #     confd = os.environ["XDG_CONFIG_HOME"]
-    # else:
-    #     confd = os.path.join(os.environ["HOME"], ".config")
-
-    # oldd = os.path.join(confd, "pms")
-    confd = "/etc/dlmp3"
-
-    # if os.path.exists(oldd) and not os.path.exists(confd):
-    #     os.rename(oldd, confd)
-
-    if not os.path.exists(confd):
-        os.makedirs(confd)
-
-    return confd
-
-
-class Config(object):
-
-    """ Holds various configuration values. """
-
-    COLOURS = True
-    DLDIR = get_default_dldir()
-    CONFDIR = get_config_dir()
-
-
-if os.environ.get("confdebug") == '1':
-
-    logfile = os.path.join(tempfile.gettempdir(), "mps.log")
-    logging.basicConfig(level=logging.DEBUG, filename=logfile)
-
-dbg = logging.debug
-
-try:
-    import readline
-    readline.set_history_length(2000)
-    has_readline = True
-
-except ImportError:
-    has_readline = False
-
-opener = build_opener()
-ua = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
-opener.addheaders = [("User-Agent", ua)]
-urlopen = opener.open
-
-
-class g(object):
-
-    """ Class for holding globals that are needed throught the module. """
-
-    from dlmp3 import memo
-    from dlmp3 import playlist
-
-    album_tracks_bitrate = 320
-    model = playlist.Playlist(name="model")
-    last_search_query = ""
-    current_page = 1
-    # active = Playlist(name="active")
-    noblank = False
-    text = {}
-    userpl = {}
-    last_opened = message = content = ""
-    config = [x for x in sorted(dir(Config)) if member_var(x)]
-    configbool = [x for x in config if type(getattr(Config, x)) is bool]
-    defaults = {setting: getattr(Config, setting) for setting in config}
-    CFFILE = os.path.join(get_config_dir(), "config")
-    # PLFILE = os.path.join(get_config_dir(), "playlist")
-    from dlmp3 import memo
-    memo = memo.Memo(os.path.join(get_config_dir(), "cache" + sys.version[0:5]))
-    OLD_CFFILE = os.path.join(os.path.expanduser("~"), ".pms-config")
-    OLD_PLFILE = os.path.join(os.path.expanduser("~"), ".pms-playlist")
-    READLINE_FILE = None
-    # HELPFILE= os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "HELP")
-
-
-def showconfig(_):
-    """ Dump config data. """
-
-    s = "  %s%-17s%s : \"%s\"\n"
-    out = "  %s%-17s   %s%s%s\n" % (c.ul, "Option", "Valeur", " " * 40, c.w)
-
-    for setting in g.config:
-        out += s % (c.g, setting.lower(), c.w, getattr(Config, setting))
-
-    g.content = out
-    g.message = "Entrer %sc <option> <valeur>%s pour modifier" % (c.g, c.w)
-
-
-def saveconfig():
-    """ Save current config to file. """
-
-    config = {setting: getattr(Config, setting) for setting in g.config}
-    pickle.dump(config, open(g.CFFILE, "wb"), protocol=2)
-
-# override config if config file exists
-def loadconfig(pfile):
-    """ Load config from file. """
-
-    saved_config = pickle.load(open(pfile, "rb"))
-    for kk, vv in saved_config.items():
-        setattr(Config, kk, vv)
-
-# Account for old versions
-if os.path.exists(g.CFFILE):
-    loadconfig(g.CFFILE)
-
-elif os.path.exists(g.OLD_CFFILE):
-    loadconfig(g.OLD_CFFILE)
-    saveconfig()
-    os.remove(g.OLD_CFFILE)
-
-if has_readline:
-    g.READLINE_FILE = os.path.join(get_config_dir(), "input_history")
-
-    if os.path.exists(g.READLINE_FILE):
-        readline.read_history_file(g.READLINE_FILE)
-
-
-class c(object):
-
-    """ Class for holding colour code values. """
-
-    white = "\x1b[%sm" % 0
-    ul = "\x1b[%sm" * 3 % (2, 4, 33)
-    cols = ["\x1b[%sm" % n for n in range(91, 96)]
-    red, green, yellow, blue, pink = cols
-
-    if not Config.COLOURS:
-        ul = red = green = yellow = blue = pink = white = ""
-    r, g, y, b, p, w = red, green, yellow, blue, pink, white
-
-
-def setconfig(key, val):
-    """ Set configuration variable. """
-
-    # pylint: disable=R0912
-    success_msg = fail_msg = ""
-    key = key.upper()
-
-    if key == "ALL" and val.upper() == "DEFAULT":
-
-        for k, v in g.defaults.items():
-            setattr(Config, k, v)
-            success_msg = "Default configuration reinstated"
-
-    elif key == "DLDIR" and not val.upper() == "DEFAULT":
-
-        valid = os.path.exists(val) and os.path.isdir(val)
-
-        if valid:
-            setattr(Config, key, val)
-            success_msg = "Downloads will be saved to %s%s%s" % (c.y, val, c.w)
-
-        else:
-            fail_msg = "Invalid path: %s%s%s" % (c.r, val, c.w)
-
-    elif key in g.configbool and not val.upper() == "DEFAULT":
-
-        if val.upper() in "0 FALSE OFF NO".split():
-            setattr(Config, key, False)
-            success_msg = "%s set to disabled (restart may be required)" % key
-
-        else:
-            setattr(Config, key, True)
-            success_msg = "%s set to enabled (restart may be required)" % key
-
-    elif key in g.config:
-
-        if val.upper() == "DEFAULT":
-            val = g.defaults[key]
-
-        setattr(Config, key, val)
-        success_msg = "%s has been set to %s" % (key.upper(), val)
-
-    else:
-        fail_msg = "Unknown config item: %s%s%s" % (c.r, key, c.w)
-
-    showconfig(1)
-
-    if success_msg:
-        saveconfig()
-        g.message = success_msg
-
-    elif fail_msg:
-        g.message = fail_msg
 
 HELP = """
 {0}Rercherche{1}
@@ -310,36 +97,6 @@ Entrer {2}c{1} pour afficher la configuration.
 {0}Quitter{1}
 Entrer {2}q{1} pour quitter.
 """.format(c.ul, c.w, c.g, c.r)
-
-
-def F(key, nb=0, na=0, percent=r"\*", nums=r"\*\*", textlib=None):
-    """Format text.
-
-    nb, na indicate newlines before and after to return
-    percent is the delimter for %s
-    nums is the delimiter for the str.format command (**1 will become {1})
-    textlib is the dictionary to use (defaults to g.text if not given)
-
-    """
-
-    textlib = textlib or g.text
-
-    assert key in textlib
-    text = textlib[key]
-    percent_fmt = textlib.get(key + "_")
-    number_fmt = textlib.get("_" + key)
-
-    if number_fmt:
-        text = re.sub(r"(%s(\d))" % nums, "{\\2}", text)
-        text = text.format(*number_fmt)
-
-    if percent_fmt:
-        text = re.sub(r"%s" % percent, r"%s", text)
-        text = text % percent_fmt
-
-    text = re.sub(r"&&", r"%s", text)
-
-    return "\n" * nb + text + c.w + "\n" * na
 
 g.text = {
     "exitmsg": """\
@@ -405,6 +162,8 @@ Released under the GPLv3 license
 }
 
 
+
+
 def tidy(raw, field):
     """ Tidy HTML entities, format songlength if field is duration.  """
 
@@ -429,7 +188,7 @@ def get_average_bitrate(song):
 
         # fix some songs reporting large bitrates
         if vbrabr > 320:
-            dbg("---- %s => bitrate: %s", song["song"], str(vbrabr))
+            # dbg("---- %s => bitrate: %s", song["song"], str(vbrabr))
             vbrabr = 320
 
         song["listrate"] = str(vbrabr) + " v"  # for display in list
@@ -469,7 +228,7 @@ def get_tracks_from_page(page):
             songs.append(cursong)
 
     else:
-        dbg("got unexpected webpage or no search results")
+        # dbg("got unexpected webpage or no search results")
         return False
 
     return songs
@@ -491,9 +250,6 @@ def xenc(stuff):
 def screen_update():
     """ Display content, show message, blank screen."""
 
-#    if not g.noblank:
-#        print("\n")
-
     if g.content:
         xprint(g.content)
 
@@ -501,8 +257,6 @@ def screen_update():
         xprint(g.message)
 
     g.message = g.content = ""
-    g.noblank = False
-
 
 
 def real_len(u):
@@ -576,15 +330,15 @@ def get_stream(song, force=False):
         url = url % song['link']
 
         try:
-            dbg("[0] fetching " + url)
-            wdata = urlopen(url, timeout=7).read().decode("utf8")
-            dbg("fetched " + url)
+            # dbg("[0] fetching " + url)
+            wdata = config.urlopen(url, timeout=7).read().decode("utf8")
+            # dbg("fetched " + url)
 
         except (HTTPError, socket.timeout):
             time.sleep(2)  # try again
-            dbg("[1] fetching 2nd attempt ")
-            wdata = urlopen(url, timeout=7).read().decode("utf8")
-            dbg("fetched 2nd attempt" + url)
+            # dbg("[1] fetching 2nd attempt ")
+            wdata = config.urlopen(url, timeout=7).read().decode("utf8")
+            # dbg("fetched 2nd attempt" + url)
 
         j = json.loads(wdata)
 
@@ -610,16 +364,16 @@ def top(period, page=1):
     tps = "past week,past 3 months,past 6 months,past year,all time".split(",")
     msg = ("%sTop tracks for %s%s" % (c.y, tps[period - 1], c.w))
     g.message = msg
-    dbg("[2] fetching " + url)
+    # dbg("[2] fetching " + url)
 
     try:
-        wdata = urlopen(url).read().decode("utf8")
+        wdata = config.urlopen(url).read().decode("utf8")
 
     except (URLError, HTTPError) as e:
         g.message = F('no data') % e
         return
 
-    dbg("fetched " + url)
+    # dbg("fetched " + url)
     match = re.search(r"<ol id=\"search-results\">[\w\W]+?<\/ol>", wdata)
     html_ol = match.group(0)
     g.model.songs = get_tracks_from_page(html_ol)
@@ -629,57 +383,52 @@ def top(period, page=1):
 def search(term, page=1):
     """ Perform search. """
 
-    if not term or len(term) < 2:
-        g.message = c.r + "Not enough input" + c.w
+    original_term = term
+    url = "http://pleer.com/search"
+    query = {"target": "tracks", "page": page}
+
+    if not "+tous" in term:
+        query["quality"] = "best"
+
+    else:
+        term = term.replace(" +tous", "")
+
+    query["q"] = term
+    g.message = "Rercherche de '%s%s%s'" % (c.y, term, c.w)
+    query = [(k, query[k]) for k in sorted(query.keys())]
+    url = "%s?%s" % (url, urlencode(query))
+
+    if g.memo.get(url):
+        songs = g.memo.get(url)
+
+    else:
+        screen_update()
+
+        try:
+            wdata = config.urlopen(url).read().decode("utf8")
+            songs = get_tracks_from_page(wdata)
+
+        except (URLError, HTTPError) as e:
+            g.message = F('no data') % e
+            # g.content = logo(c.r)
+            return
+
+        if songs:
+            g.memo.add(url, songs)
+
+    if songs:
+        g.model.songs = songs
+        g.message = "Résultats de la recherche pour %s%s%s" % (c.y, term, c.w)
+        g.last_opened = ""
+        g.last_search_query = original_term
+        g.current_page = page
         g.content = generate_songlist_display()
 
     else:
-        original_term = term
-        url = "http://pleer.com/search"
-        query = {"target": "tracks", "page": page}
-
-        if not "+tous" in term:
-            query["quality"] = "best"
-
-        else:
-            term = term.replace(" +tous", "")
-
-        query["q"] = term
-        g.message = "Rercherche de '%s%s%s'" % (c.y, term, c.w)
-        query = [(k, query[k]) for k in sorted(query.keys())]
-        url = "%s?%s" % (url, urlencode(query))
-
-        if g.memo.get(url):
-            songs = g.memo.get(url)
-
-        else:
-            screen_update()
-
-            try:
-                wdata = urlopen(url).read().decode("utf8")
-                songs = get_tracks_from_page(wdata)
-
-            except (URLError, HTTPError) as e:
-                g.message = F('no data') % e
-                # g.content = logo(c.r)
-                return
-
-            if songs:
-                g.memo.add(url, songs)
-
-        if songs:
-            g.model.songs = songs
-            g.message = "Résultats de la recherche pour %s%s%s" % (c.y, term, c.w)
-            g.last_opened = ""
-            g.last_search_query = original_term
-            g.current_page = page
-            g.content = generate_songlist_display()
-
-        else:
-            g.message = "Rien trouvé pour %s%s%s" % (c.y, term, c.w)
-            # g.content = logo(c.r)
-            g.current_page = 1
-            g.last_search_query = ""
+        g.message = "Rien trouvé pour %s%s%s" % (c.y, term, c.w)
+        # g.content = logo(c.r)
+        g.current_page = 1
+        g.last_search_query = ""
 
 
 def show_message(message, col=c.r, update=False):
@@ -939,7 +688,7 @@ def _do_query(url, query, err='query failed', cache=True, report=False):
         return g.memo.get(url) if not report else (g.memo.get(url), True)
 
     try:
-        wdata = urlopen(url).read()
+        wdata = config.urlopen(url).read()
 
     except (URLError, HTTPError) as e:
         g.message = "%s: %s (%s)" % (err, e, url)
@@ -955,11 +704,11 @@ def _do_query(url, query, err='query failed', cache=True, report=False):
 def _make_fname(song):
     """" Create download directory, generate filename. """
 
-    if not os.path.exists(Config.DLDIR):
-        os.makedirs(Config.DLDIR)
+    if not os.path.exists(config.Config.DLDIR):
+        os.makedirs(config.Config.DLDIR)
 
     filename = song['singer'][:49] + " - " + song['song'][:49] + ".mp3"
-    filename = os.path.join(Config.DLDIR, filename)
+    filename = os.path.join(config.Config.DLDIR, filename)
     return filename
 
 
@@ -970,9 +719,9 @@ def _download(song, filename):
     status_string = ('  {0}{1:,}{2} Bytes [{0}{3:.2%}{2}] received. Rate: '
                      '[{0}{4:4.0f} kbps{2}].  ETA: [{0}{5:.0f} secs{2}]')
     song['track_url'] = get_stream(song)
-    dbg("[4] fetching url " + song['track_url'])
-    resp = urlopen(song['track_url'])
-    dbg("fetched url " + song['track_url'])
+    # dbg("[4] fetching url " + song['track_url'])
+    resp = config.urlopen(song['track_url'])
+    # dbg("fetched url " + song['track_url'])
     total = int(resp.info()['Content-Length'].strip())
     chunksize, bytesdone, t0 = 16384, 0, time.time()
     outfh = open(filename, 'wb')
@@ -996,49 +745,6 @@ def _download(song, filename):
 
     return filename
 
-
-def _bi_range(start, end):
-    """
-    Inclusive range function, works for reverse ranges.
-
-    eg. 5,2 returns [5,4,3,2] and 2, 4 returns [2,3,4]
-
-    """
-    if start == end:
-        return (start,)
-
-    elif end < start:
-        return reversed(range(end, start + 1))
-
-    else:
-        return range(start, end + 1)
-
-
-def _parse_multi(choice, end=None):
-    """ Handle ranges like 5-9, 9-5, 5- and -5. Return list of ints. """
-
-    end = end or str(g.model.size)
-    pattern = r'(?<![-\d])(\d+-\d+|-\d+|\d+-|\d+)(?![-\d])'
-    items = re.findall(pattern, choice)
-    alltracks = []
-
-    for x in items:
-
-        if x.startswith("-"):
-            x = "1" + x
-
-        elif x.endswith("-"):
-            x = x + str(end)
-
-        if "-" in x:
-            nrange = x.split("-")
-            startend = map(int, nrange)
-            alltracks += _bi_range(*startend)
-
-        else:
-            alltracks.append(int(x))
-
-    return alltracks
 
 def show_help(helpname=None):
     """ Print help message. """
@@ -1121,14 +827,11 @@ def nextprev(np):
 def main():
     """ Main control loop. """
 
-    # DEBUG
-    # pdb.set_trace()
-
     # update screen
     g.content = generate_songlist_display()
 
     if not sys.argv[1:]:
-    	g.message = "Rechercher la musique que vous voulez " + c.b + "- [h]elp, [a]lbum, [t]op, [c]config, [q]uit" + c.w
+        g.message = "Rechercher la musique que vous voulez " + c.b + "- [h]elp, [a]lbum, [t]op, [c]config, [q]uit" + c.w
     screen_update()
 
     # get cmd line input
@@ -1142,9 +845,9 @@ def main():
         'download': r'(\d{1,2})$',
         'nextprev': r'(n|p)$',
         'top': r't\s*(|3m|6m|year|all)\s*$',
-        'showconfig': r'(c)$',
-        'setconfig': r'c\s*(\w+)\s*"?([^"]*)"?\s*$',
-        'quits': r'(?:q|quit|exit)$',
+        'config.showconfig': r'(c)$',
+        'config.setconfig': r'c\s*(\w+)\s*"?([^"]*)"?\s*$',
+        'quits': r'q$',
     }
 
     # compile regexp's
@@ -1179,9 +882,3 @@ def main():
                 g.message = c.b + "Bad syntax. Enter h for help" + c.w
 
         screen_update()
-
-
-if __name__ == "__main__":
-    if has_colorama:
-        init_colorama()
-    main()
