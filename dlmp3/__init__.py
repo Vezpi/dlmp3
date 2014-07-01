@@ -1,8 +1,28 @@
 import os
 import cPickle as pickle
 
-cli = True
-daemon = False
+
+class Launcher(object):
+    """Holds Launcher options."""
+
+    def __init__(self):
+        self.CLI = True
+        self.DAEMON = False
+        self.PORT = 5000
+        self.DEBUG = False
+
+    def mode_server(self):
+        """ Launch the web server. """
+        import runserver
+        runserver.main()
+    
+    def mode_terminal(self):
+        """ Launch the application in terminal mode. """
+        import terminal
+        terminal.main()
+
+
+launcher = Launcher()
 songlist = []
 last_search_query = ""
 current_page = 1
