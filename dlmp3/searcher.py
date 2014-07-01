@@ -1,8 +1,5 @@
-#! /usr/bin/python
-# -*- coding:utf-8 -*-
-
-# import dlmp3
-from dlmp3 import Config, Global
+import dlmp3
+from dlmp3 import Config
 from urllib2 import build_opener, HTTPError, URLError
 from urllib import urlencode
 import time
@@ -64,7 +61,7 @@ def get_tracks_from_page(page):
         return False
     return songs
 
-def get_top(period, page=1):
+def get_top(period="w", page=1):
     period = period or "w"
     periods = "_ w 3m 6m year all".split()
     period = periods.index(period)
@@ -75,12 +72,14 @@ def get_top(period, page=1):
     try:
         wdata = urlopen(url).read().decode("utf8")
     except (URLError, HTTPError) as e:
-        Global.message = Color.red +  "no data" + Color.white
+        dlmp3.message = Color.red +  "no data" + Color.white
         return
     # dbg("fetched " + url)
     match = re.search(r"<ol id=\"search-results\">[\w\W]+?<\/ol>", wdata)
     html_ol = match.group(0)
-    Global.songlist = get_tracks_from_page(html_ol)
+    dlmp3.songlist = get_tracks_from_page(html_ol)
+    songs = dlmp3.songlist
+    return songs
 
 def do_search(term, page=1):
     """ Perform search. """
@@ -98,17 +97,17 @@ def do_search(term, page=1):
         wdata = urlopen(url).read().decode("utf8")
         songs = get_tracks_from_page(wdata)
     except (URLError, HTTPError) as e:
-        Global.message = Color.red +  "no data" + Color.white
+        dlmp3.message = Color.red +  "no data" + Color.white
         return
     if songs:
-        Global.songlist = songs
-        Global.last_opened = ""
-        Global.last_search_query = original_term
-        Global.current_page = page
+        dlmp3.songlist = songs
+        dlmp3.last_opened = ""
+        dlmp3.last_search_query = original_term
+        dlmp3.current_page = page
         return songs
     else:
-        Global.current_page = 1
-        Global.last_search_query = ""
+        dlmp3.current_page = 1
+        dlmp3.last_search_query = ""
         return
 
 def make_filename(song):

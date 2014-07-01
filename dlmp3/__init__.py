@@ -1,10 +1,13 @@
-#! /usr/bin/python
-# -*- coding:utf-8 -*-
-
-import sys
 import os
 import cPickle as pickle
 
+cli = True
+daemon = False
+songlist = []
+last_search_query = ""
+current_page = 1
+last_opened = message = content = ""
+READLINE_FILE = None
 member_var = lambda x: not(x.startswith("__") or callable(x))
 
 def get_default_dldir():
@@ -50,20 +53,6 @@ class Config(object):
     CONFDIR = get_config_dir()
 
 
-class Global(object):
-	""" Holds global variables throught the module. """
-	songlist = []
-	last_search_query = ""
-	current_page = 1
-	last_opened = message = content = ""
-	config = [x for x in sorted(dir(Config)) if member_var(x)]
-	configbool = [x for x in config if type(getattr(Config, x)) is bool]
-	defaults = {setting: getattr(Config, setting) for setting in config}
-	CFFILE = os.path.join(get_config_dir(), "config")
-	READLINE_FILE = None
-	mode_terminal = 0
-
-
 class Color(object):
     """ Class for holding colour code values. """
     white = "\x1b[%sm" % 0
@@ -73,6 +62,11 @@ class Color(object):
     if not Config.COLOURS:
         ul = red = green = yellow = blue = pink = white = ""
 
+
+config = [x for x in sorted(dir(Config)) if member_var(x)]
+configbool = [x for x in config if type(getattr(Config, x)) is bool]
+defaults = {setting: getattr(Config, setting) for setting in config}
+CFFILE = os.path.join(get_config_dir(), "config")
 
 try:
     import readline
@@ -84,8 +78,8 @@ except ImportError:
 
 def saveconfig():
     """ Save current config to file. """
-    Global.config = {setting: getattr(Config, setting) for setting in Global.config}
-    pickle.dump(Global.config, open(Global.CFFILE, "wb"), protocol=2)
+    config = {setting: getattr(Config, setting) for setting in config}
+    pickle.dump(config, open(CFFILE, "wb"), protocol=2)
 
 # override config if config file exists
 def loadconfig(pfile):
@@ -95,21 +89,19 @@ def loadconfig(pfile):
         setattr(Config, kk, vv)
 
 # Account for old versions
-if os.path.exists(Global.CFFILE):
-    loadconfig(Global.CFFILE)
+if os.path.exists(CFFILE):
+    loadconfig(CFFILE)
 if has_readline:
-    Global.READLINE_FILE = os.path.join(get_config_dir(), "input_history")
-    if os.path.exists(Global.READLINE_FILE):
-        readline.read_history_file(Global.READLINE_FILE)
+    READLINE_FILE = os.path.join(get_config_dir(), "input_history")
+    if os.path.exists(READLINE_FILE):
+        readline.read_history_file(READLINE_FILE)
 
 def launch_server():
-	""" Launch the web server. """
-	import runserver
-        Global.mode_terminal = 0
-        runserver.main()
+    """ Launch the web server. """
+    import runserver
+    runserver.main()
 
 def launch_terminal():
-	""" Launch the application in terminal mode. """
-	import terminal
-	Global.mode_terminal = 1
-	terminal.main()
+    """ Launch the application in terminal mode. """
+    import terminal
+    terminal.main()

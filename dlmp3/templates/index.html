@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block body %}
+  {% if session.logged_in %}
+    <form action="{{ url_for('index') }}" method=post>
+      <dl>
+        <dd><input type=text size=100 name=recherche><input type=submit value=Recherche>
+      </dl>
+    </form>
+  {% endif %}
+  {% if songs %}
+    <div class=songlist>
+    {% for song in songs %}
+      <div class=song>
+        <b>{{ song.singer }}</b> {{ song.song }}
+        <div class=download-btn>
+          <a href="/download={{ song.link }}" title="Download">Télécharger</a>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

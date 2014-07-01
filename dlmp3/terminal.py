@@ -1,4 +1,3 @@
-#! /usr/bin/python
 # -*- coding:utf-8 -*-
 
 import unicodedata
@@ -19,7 +18,7 @@ else:
     compat_input = raw_input
 
 import dlmp3
-from dlmp3 import Color, Config, Global
+from dlmp3 import Color, Config
 import searcher
 
 HELP = """
@@ -61,11 +60,11 @@ def xenc(stuff):
 
 def screen_update():
     """ Display content, show message, blank screen."""
-    if Global.content:
-        xprint(Global.content)
-    if Global.message:
-        xprint(Global.message)
-    Global.message = Global.content = ""
+    if dlmp3.content:
+        xprint(dlmp3.content)
+    if dlmp3.message:
+        xprint(dlmp3.message)
+    dlmp3.message = dlmp3.content = ""
 
 def real_len(u):
     """ Try to determine width of strings displayed with monospace font. """
@@ -88,9 +87,9 @@ def uea_rpad(num, t):
 
 def generate_songlist_display(song=False):
     """ Generate list of choices from a song list."""
-    songs = Global.songlist or []
+    songs = dlmp3.songlist or []
     if not songs:
-        return # logo(Color.green) + "\n\n"
+        return
     fmtrow = "%s %-6s %-9s %-44s %-44s %-9s %-7s%s\n"
     head = (Color.underline, "Item", "Size", "Artist", "Track", "Length", "Bitrate", Color.white)
     out = "\n" + fmtrow % head
@@ -117,8 +116,8 @@ def generate_songlist_display(song=False):
 
 def show_message(message, col=Color.red, update=False):
     """ Show message using col, update screen if required. """
-    Global.content = generate_songlist_display()
-    Global.message = col + message + Color.white
+    dlmp3.content = generate_songlist_display()
+    dlmp3.message = col + message + Color.white
     if update:
         screen_update()
 
@@ -129,20 +128,20 @@ def top(period, page=1):
     period = periods.index(period)
     tps = "past week,past 3 months,past 6 months,past year,all time".split(",")
     msg = ("%sTop tracks for %s%s" % (Color.yellow, tps[period - 1], Color.white))
-    Global.message = msg
+    dlmp3.message = msg
     searcher.get_top(original_period, page)
-    Global.content = generate_songlist_display()
+    dlmp3.content = generate_songlist_display()
 
 def search(term, page=1):
     """ Perform search. """
-    Global.message = "Rercherche de '%s%s%s'" % (Color.yellow, term.replace(" +tous", ""), Color.white)
+    dlmp3.message = "Rercherche de '%s%s%s'" % (Color.yellow, term.replace(" +tous", ""), Color.white)
     screen_update()
     songs = searcher.do_search(term, page)
     if songs:
-        Global.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, term, Color.white)
-        Global.content = generate_songlist_display()
+        dlmp3.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, term, Color.white)
+        dlmp3.content = generate_songlist_display()
     else:
-        Global.message = "Rien trouvé pour %s%s%s" % (Color.yellow, term, Color.white)
+        dlmp3.message = "Rien trouvé pour %s%s%s" % (Color.yellow, term, Color.white)
 
 def downloading(song, filename):
     """ Download file, show status, return filename. """
@@ -172,21 +171,21 @@ def downloading(song, filename):
 
 def download(num):
     """ Download a track. """
-    song = (Global.songlist[int(num) - 1])
+    song = (dlmp3.songlist[int(num) - 1])
     filename = searcher.make_filename(song)
     try:
         f = downloading(song, filename)
-        Global.message = "Downloaded " + Color.green + f + Color.white
+        dlmp3.message = "Downloaded " + Color.green + f + Color.white
     except IndexError:
-        Global.message = Color.red + "Invalid index" + Color.white
+        dlmp3.message = Color.red + "Invalid index" + Color.white
     except KeyboardInterrupt:
-        Global.message = Color.red + "Download halted!" + Color.white
+        dlmp3.message = Color.red + "Download halted!" + Color.white
         try:
             os.remove(filename)
         except IOError:
             pass
     finally:
-        Global.content = "\n"
+        dlmp3.content = "\n"
 
 def show_help(helpname=None):
     """ Print help message. """
@@ -198,8 +197,8 @@ def quits(showlogo=True):
 
 def prompt_for_exit():
     """ Ask for exit confirmation. """
-    Global.message = Color.red + "Press ctrl-c again to exit" + Color.white
-    Global.content = generate_songlist_display()
+    dlmp3.message = Color.red + "Press ctrl-c again to exit" + Color.white
+    dlmp3.content = generate_songlist_display()
     screen_update()
     try:
         userinput = compat_input(Color.red + " > " + Color.white)
@@ -210,29 +209,29 @@ def prompt_for_exit():
 def nextprev(np):
     """ Get next / previous search results. """
     if np == "n":
-        if len(Global.songlist) == 20 and Global.last_search_query:
-            Global.current_page += 1
-            search(Global.last_search_query, Global.current_page)
-            Global.message += " : page %s" % Global.current_page
+        if len(dlmp3.songlist) == 20 and dlmp3.last_search_query:
+            dlmp3.current_page += 1
+            search(dlmp3.last_search_query, dlmp3.current_page)
+            dlmp3.message += " : page %s" % dlmp3.current_page
         else:
-            Global.message = "No more songs to display"
+            dlmp3.message = "No more songs to display"
     elif np == "p":
-        if Global.current_page > 1 and Global.last_search_query:
-            Global.current_page -= 1
-            search(Global.last_search_query, Global.current_page)
-            Global.message += " : page %s" % Global.current_page
+        if dlmp3.current_page > 1 and dlmp3.last_search_query:
+            dlmp3.current_page -= 1
+            search(dlmp3.last_search_query, dlmp3.current_page)
+            dlmp3.message += " : page %s" % dlmp3.current_page
         else:
-            Global.message = "No previous songs to display"
-    Global.content = generate_songlist_display()
+            dlmp3.message = "No previous songs to display"
+    dlmp3.content = generate_songlist_display()
 
 def showconfig(_):
     """ Dump config data. """
     s = "  %s%-17s%s : \"%s\"\n"
     out = "  %s%-17s   %s%s%s\n" % (Color.underline, "Option", "Valeur", " " * 40, Color.white)
-    for setting in Global.config:
+    for setting in dlmp3.config:
         out += s % (Color.green, setting.lower(), Color.white, getattr(Config, setting))
-    Global.content = out
-    Global.message = "Entrer %sc <option> <valeur>%s pour modifier" % (Color.green, Color.white)
+    dlmp3.content = out
+    dlmp3.message = "Entrer %sc <option> <valeur>%s pour modifier" % (Color.green, Color.white)
 
 def setconfig(key, val):
     """ Set configuration variable. """
@@ -240,7 +239,7 @@ def setconfig(key, val):
     success_msg = fail_msg = ""
     key = key.upper()
     if key == "ALL" and val.upper() == "DEFAULT":
-        for k, v in Global.defaults.items():
+        for k, v in dlmp3.defaults.items():
             setattr(Config, k, v)
             success_msg = "Default configuration reinstated"
     elif key == "DLDIR" and not val.upper() == "DEFAULT":
@@ -250,32 +249,32 @@ def setconfig(key, val):
             success_msg = "Downloads will be saved to %s%s%s" % (Color.yellow, val, Color.white)
         else:
             fail_msg = "Invalid path: %s%s%s" % (Color.red, val, Color.white)
-    elif key in Global.configbool and not val.upper() == "DEFAULT":
+    elif key in dlmp3.configbool and not val.upper() == "DEFAULT":
         if val.upper() in "0 FALSE OFF NO".split():
             setattr(Config, key, False)
             success_msg = "%s set to disabled (restart may be required)" % key
         else:
             setattr(Config, key, True)
             success_msg = "%s set to enabled (restart may be required)" % key
-    elif key in Global.config:
+    elif key in dlmp3.config:
         if val.upper() == "DEFAULT":
-            val = Global.defaults[key]
+            val = dlmp3.defaults[key]
         setattr(Config, key, val)
         success_msg = "%s has been set to %s" % (key.upper(), val)
     else:
         fail_msg = "Unknown config item: %s%s%s" % (Color.red, key, Color.white)
     showconfig(1)
     if success_msg:
-        Global.saveconfig()
-        Global.message = success_msg
+        dlmp3.saveconfig()
+        dlmp3.message = success_msg
     elif fail_msg:
-        Global.message = fail_msg
+        dlmp3.message = fail_msg
 
 def main():
     """ Main control loop. """
     # update screen
     if not sys.argv[1:]:
-        Global.message = "Rechercher la musique que vous voulez " + Color.blue + "- [h]elp, [t]op, [c]config, [q]uit" + Color.white
+        dlmp3.message = "Rechercher la musique que vous voulez " + Color.blue + "- [h]elp, [t]op, [c]config, [q]uit" + Color.white
     screen_update()
     # get cmd line input
     inp = " ".join(sys.argv[1:])
@@ -292,7 +291,7 @@ def main():
     }
     # compile regexp's
     regx = {name: re.compile(val, re.UNICODE) for name, val in regx.items()}
-    prompt = "> "
+    prompt = Color.blue + "dlmp3" + Color.white + " > "
     while True:
         try:
             # get user input
@@ -307,9 +306,9 @@ def main():
                 try:
                     globals()[func](*matches)
                 except IndexError:
-                    Global.message = Color.red + "Invalid item / range entered!" + Color.white
+                    dlmp3.message = Color.red + "Invalid item / range entered!" + Color.white
                 break
         else:
             if userinput:
-                Global.message = Color.blue + "Bad syntax. Enter h for help" + Color.white
+                dlmp3.message = Color.blue + "Bad syntax. Enter h for help" + Color.white
         screen_update()

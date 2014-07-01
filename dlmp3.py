@@ -1,8 +1,8 @@
 #! /usr/bin/python
 # -*- coding:utf-8 -*-
 
-import argparse
 import dlmp3
+import argparse
 
 __author__ = "Vezpi"
 __version__ = "0.01.0"
@@ -15,6 +15,9 @@ def launcher():
     parser.add_argument('-v','--version', action='version', version=__version__, help='print the version of the application')
     args = parser.parse_args()
     if args.web:
+        dlmp3.cli = False
+        if args.daemon:
+            dlmp3.daemon = True
         dlmp3.launch_server()
     else:
         dlmp3.launch_terminal()

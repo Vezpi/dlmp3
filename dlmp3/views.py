@@ -1,38 +1,113 @@
-#! /usr/bin/python
 # -*- coding:utf-8 -*-
 
-from dlmp3 import server
-from flask import request, make_response, abort, redirect, render_template, session
+from runserver import server
+from flask import request, make_response, abort, redirect, render_template, session, flash
 from PIL import Image
 from StringIO import StringIO
 from datetime import date
+import time
+import dlmp3
+from dlmp3 import Config
+import searcher
 
-@server.route('/')
-def index_get():
-    if not 'ok' in session:
-        return redirect('/login')
-            
+name = "DLMP3"
+
+def logged():
+    if not 'logged_in' in session:
+        return False
     else:
-        return "C'est un plaisir de se revoir toto! "
+        return True
 
+def get_song_from_list(songid):
+    return [song for song in dlmp3.songlist if song['link'] == songid]
+
+def downloading(song, filename):
+    """ Download file, show status, return filename. """
+    # xprint("Downloading %s%s%s ..\n" % (Color.green, filename, Color.white))
+    # status_string = ('  {0}{1:,}{2} Bytes [{0}{3:.2%}{2}] received. Rate: '
+    #                  '[{0}{4:4.0f} kbps{2}].  ETA: [{0}{5:.0f} secs{2}]')
+    song['track_url'] = searcher.get_stream(song)
+    resp = searcher.urlopen(song['track_url'])
+    total = int(resp.info()['Content-Length'].strip())
+    chunksize, bytesdone, t0 = 16384, 0, time.time()
+    outfh = open(filename, 'wb')
+    while True:
+        chunk = resp.read(chunksize)
+        outfh.write(chunk)
+        elapsed = time.time() - t0
+        bytesdone += len(chunk)
+        rate = (bytesdone / 1024) / elapsed
+        eta = (total - bytesdone) / (rate * 1024)
+        # stats = (Color.yellow, bytesdone, Color.white, bytesdone * 1.0 / total, rate, eta)
+        if not chunk:
+            outfh.close()
+            break
+        # status = status_string.format(*stats)
+        # sys.stdout.write("\r" + status + ' ' * 4 + "\r")
+        # sys.stdout.flush()
+    return filename
+
+@server.route('/', methods=['GET', 'POST'])
+def index():
+    if not logged():
+        return redirect('/login')
+    else:
+        if request.method == 'POST':
+            if request.form['recherche']:
+                term = request.form['recherche']
+                songs = searcher.do_search(term)
+                if songs:
+                    flash(u'Résultats de la recherche pour ' + term)
+                else:
+                    flash(u'Rien trouvé pour ' + term)
+        return render_template('index.html', songs=dlmp3.songlist)
+
+@server.route('/download=<songid>')
+def download(songid):
+    if not logged():
+        return redirect('/login')
+    else:
+        song = get_song_from_list(songid)
+        filename = searcher.make_filename(song[0])
+        flash(u'Téléchargement de '+ filename)
+        if downloading(song[0], filename):
+            flash(u'Téléchargement terminé')
+        else:
+            flash(u'Téléchargement en erreur')
+        return redirect('/')
 
 @server.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
-        session['pw'] = request.form['pw']
-        if session['pw'] == 'cl':
-            session['ok'] = 1
+        if request.form['PASSWORD'] == server.config['PASSWORD']:
+            session['logged_in'] = True
+            flash(u'Vous êtes connecté')
+            return redirect('/')
         else:
-            return "Mot de passe incorrect"
-
-        # return "Bonjour {pw}".format(pw=request.form['pw'])
+            error = 'Invalid password'
+    return render_template('login.html', error=error)
+    
         
 
-    if not 'ok' in session:
-        return "Mot de passe : " + '<form action="" method="post"><input type="text" name="pw" /><input type="submit" value="OK" /></form>'
 
-    return redirect('/')
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @server.route('/old')
