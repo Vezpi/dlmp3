@@ -13,15 +13,20 @@
 
 DESC="MP3 Downloader"
 NAME=dlmp3
-DAEMON=/home/vezpi/project/$NAME/${NAME}.py
+APP_PATH=/home/vezpi/project/$NAME
+DAEMON=${NAME}.py
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
+
 USER=seedbox
 NICE=5
-DAEMON_ARGS="-w"
+PORT=5000
+
+DAEMON_ARGS="-w -p $PORT"
+
 
 # Exit if the package is not installed
-[ -x "$DAEMON" ] || exit 0
+[ -x "$APP_PATH/$DAEMON" ] || exit 0
 
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
@@ -34,16 +39,13 @@ DAEMON_ARGS="-w"
 # Function that starts the daemon/service
 do_start()
 {
-	start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile --user $USER --startas $DAEMON --test > /dev/null \
-		|| return 1
-	start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile --user $USER --startas $DAEMON -- $DAEMON_ARGS \
+	start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile -d $APP_PATH --chuid $USER --nicelevel $NICE --exec $DAEMON -- $DAEMON_ARGS \
 		|| return 2
 }
 
 # Function that stops the daemon/service
 do_stop()
 {
-	[ "$?" = 2 ] && return 2
 	start-stop-daemon --stop --pidfile $PIDFILE --retry 10
 	RETVAL="$?"
 	# Many daemons don't delete their pidfiles when they exit.
@@ -91,7 +93,7 @@ case "$1" in
 	esac
 	;;
   *)
-	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart}" >&2
 	exit 3
 	;;
 esac
