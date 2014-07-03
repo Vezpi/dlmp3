@@ -6,8 +6,7 @@ from PIL import Image
 from StringIO import StringIO
 from datetime import date
 import time
-import dlmp3
-from dlmp3 import Config
+from dlmp3 import application, config
 import searcher
 
 name = "DLMP3"
@@ -19,7 +18,7 @@ def logged():
         return True
 
 def get_song_from_list(songid):
-    return [song for song in dlmp3.songlist if song['link'] == songid]
+    return [song for song in application.songlist if song['link'] == songid]
 
 def downloading(song, filename):
     """ Download file, show status, return filename. """
@@ -60,7 +59,7 @@ def index():
                     flash(u'Résultats de la recherche pour ' + term)
                 else:
                     flash(u'Rien trouvé pour ' + term)
-        return render_template('index.html', songs=dlmp3.songlist)
+        return render_template('index.html', songs=application.songlist)
 
 @server.route('/download=<songid>')
 def download(songid):

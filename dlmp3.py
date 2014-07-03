@@ -11,7 +11,6 @@ __license__ = "GPLv3"
 def dlmp3_launcher():
     parser = argparse.ArgumentParser(description='Music MP3 downloader')
     parser.add_argument('-w', '--web', action='store_true', help='launch the web server')
-    parser.add_argument('-d', '--daemon', action='store_true', help='NOT IMPLEMENTED the server is launched as a daemon')
     parser.add_argument('-p', '--port', type=int, help='specify the port which the server will listen')
     parser.add_argument('-v','--version', action='version', version=__version__, help='print the version of the application')
     parser.add_argument('-D','--debug', action='store_true', help='run in debug mode')

@@ -1,5 +1,4 @@
-import dlmp3
-from dlmp3 import Config
+from dlmp3 import application, config
 from urllib2 import build_opener, HTTPError, URLError
 from urllib import urlencode
 import time
@@ -72,13 +71,13 @@ def get_top(period="w", page=1):
     try:
         wdata = urlopen(url).read().decode("utf8")
     except (URLError, HTTPError) as e:
-        dlmp3.message = Color.red +  "no data" + Color.white
+        application.message = Color.red +  "no data" + Color.white
         return
     # dbg("fetched " + url)
     match = re.search(r"<ol id=\"search-results\">[\w\W]+?<\/ol>", wdata)
     html_ol = match.group(0)
-    dlmp3.songlist = get_tracks_from_page(html_ol)
-    songs = dlmp3.songlist
+    application.songlist = get_tracks_from_page(html_ol)
+    songs = application.songlist
     return songs
 
 def do_search(term, page=1):
@@ -97,25 +96,25 @@ def do_search(term, page=1):
         wdata = urlopen(url).read().decode("utf8")
         songs = get_tracks_from_page(wdata)
     except (URLError, HTTPError) as e:
-        dlmp3.message = Color.red +  "no data" + Color.white
+        application.message = Color.red +  "no data" + Color.white
         return
     if songs:
-        dlmp3.songlist = songs
-        dlmp3.last_opened = ""
-        dlmp3.last_search_query = original_term
-        dlmp3.current_page = page
+        application.songlist = songs
+        application.last_opened = ""
+        application.last_search_query = original_term
+        application.current_page = page
         return songs
     else:
-        dlmp3.current_page = 1
-        dlmp3.last_search_query = ""
+        application.current_page = 1
+        application.last_search_query = ""
         return
 
 def make_filename(song):
     """" Create download directory, generate filename. """
-    if not os.path.exists(Config.DLDIR):
-        os.makedirs(Config.DLDIR)
+    if not os.path.exists(config.DLDIR):
+        os.makedirs(config.DLDIR)
     filename = song['singer'][:49] + " - " + song['song'][:49] + ".mp3"
-    filename = os.path.join(Config.DLDIR, filename)
+    filename = os.path.join(config.DLDIR, filename)
     return filename
 
 def get_stream(song, force=False):

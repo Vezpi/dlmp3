@@ -17,8 +17,7 @@ else:
     py2utf8_decode = lambda x: x.decode("utf8") if type(x) == str else x
     compat_input = raw_input
 
-import dlmp3
-from dlmp3 import Config
+from dlmp3 import application, config
 import searcher
 
 
@@ -28,7 +27,7 @@ class Color(object):
     underline = "\x1b[%sm" * 3 % (2, 4, 33)
     cols = ["\x1b[%sm" % n for n in range(91, 96)]
     red, green, yellow, blue, pink = cols
-    if not Config.COLOURS:
+    if not config.COLOURS:
         ul = red = green = yellow = blue = pink = white = ""
 
 
@@ -52,7 +51,7 @@ Defaut : Semaine
 {2}year{1} : annuel
 {2}all{1} : de tout les temps
 
-{0}Configuration{1}
+{0}configuration{1}
 Entrer {2}c{1} pour afficher la configuration.
 
 {0}Quitter{1}
@@ -71,11 +70,11 @@ def xenc(stuff):
 
 def screen_update():
     """ Display content, show message, blank screen."""
-    if dlmp3.content:
-        xprint(dlmp3.content)
-    if dlmp3.message:
-        xprint(dlmp3.message)
-    dlmp3.message = dlmp3.content = ""
+    if application.content:
+        xprint(application.content)
+    if application.message:
+        xprint(application.message)
+    application.message = application.content = ""
 
 def real_len(u):
     """ Try to determine width of strings displayed with monospace font. """
@@ -98,7 +97,7 @@ def uea_rpad(num, t):
 
 def generate_songlist_display(song=False):
     """ Generate list of choices from a song list."""
-    songs = dlmp3.songlist or []
+    songs = application.songlist or []
     if not songs:
         return
     fmtrow = "%s %-6s %-9s %-44s %-44s %-9s %-7s%s\n"
@@ -127,8 +126,8 @@ def generate_songlist_display(song=False):
 
 def show_message(message, col=Color.red, update=False):
     """ Show message using col, update screen if required. """
-    dlmp3.content = generate_songlist_display()
-    dlmp3.message = col + message + Color.white
+    application.content = generate_songlist_display()
+    application.message = col + message + Color.white
     if update:
         screen_update()
 
@@ -139,21 +138,21 @@ def top(period, page=1):
     period = periods.index(period)
     tps = "past week,past 3 months,past 6 months,past year,all time".split(",")
     msg = ("%sTop tracks for %s%s" % (Color.yellow, tps[period - 1], Color.white))
-    dlmp3.message = msg
+    application.message = msg
     searcher.get_top(original_period, page)
-    dlmp3.content = generate_songlist_display()
+    application.content = generate_songlist_display()
 
 def search(term, page=1):
     """ Perform search. """
     show_term = term.replace(" +tous", "")
-    dlmp3.message = "Rercherche de '%s%s%s'" % (Color.yellow, show_term, Color.white)
+    application.message = "Rercherche de '%s%s%s'" % (Color.yellow, show_term, Color.white)
     screen_update()
     songs = searcher.do_search(term, page)
     if songs:
-        dlmp3.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, show_term, Color.white)
-        dlmp3.content = generate_songlist_display()
+        application.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, show_term, Color.white)
+        application.content = generate_songlist_display()
     else:
-        dlmp3.message = "Rien trouvé pour %s%s%s" % (Color.yellow, show_term, Color.white)
+        application.message = "Rien trouvé pour %s%s%s" % (Color.yellow, show_term, Color.white)
 
 def downloading(song, filename):
     """ Download file, show status, return filename. """
@@ -183,21 +182,21 @@ def downloading(song, filename):
 
 def download(num):
     """ Download a track. """
-    song = (dlmp3.songlist[int(num) - 1])
+    song = (application.songlist[int(num) - 1])
     filename = searcher.make_filename(song)
     try:
         f = downloading(song, filename)
-        dlmp3.message = "Downloaded " + Color.green + f + Color.white
+        application.message = "Downloaded " + Color.green + f + Color.white
     except IndexError:
-        dlmp3.message = Color.red + "Invalid index" + Color.white
+        application.message = Color.red + "Invalid index" + Color.white
     except KeyboardInterrupt:
-        dlmp3.message = Color.red + "Download halted!" + Color.white
+        application.message = Color.red + "Download halted!" + Color.white
         try:
             os.remove(filename)
         except IOError:
             pass
     finally:
-        dlmp3.content = "\n"
+        application.content = "\n"
 
 def show_help(helpname=None):
     """ Print help message. """
@@ -209,8 +208,8 @@ def quits(showlogo=True):
 
 def prompt_for_exit():
     """ Ask for exit confirmation. """
-    dlmp3.message = Color.red + "Press ctrl-c again to exit" + Color.white
-    dlmp3.content = generate_songlist_display()
+    application.message = Color.red + "Press ctrl-c again to exit" + Color.white
+    application.content = generate_songlist_display()
     screen_update()
     try:
         userinput = compat_input(Color.red + " > " + Color.white)
@@ -221,75 +220,58 @@ def prompt_for_exit():
 def nextprev(np):
     """ Get next / previous search results. """
     if np == "n":
-        if len(dlmp3.songlist) == 20 and dlmp3.last_search_query:
-            dlmp3.current_page += 1
-            search(dlmp3.last_search_query, dlmp3.current_page)
-            dlmp3.message += " : page %s" % dlmp3.current_page
+        if len(application.songlist) == 20 and application.last_search_query:
+            application.current_page += 1
+            search(application.last_search_query, application.current_page)
+            application.message += " : page %s" % application.current_page
         else:
-            dlmp3.message = "No more songs to display"
+            application.message = "No more songs to display"
     elif np == "p":
-        if dlmp3.current_page > 1 and dlmp3.last_search_query:
-            dlmp3.current_page -= 1
-            search(dlmp3.last_search_query, dlmp3.current_page)
-            dlmp3.message += " : page %s" % dlmp3.current_page
+        if application.current_page > 1 and application.last_search_query:
+            application.current_page -= 1
+            search(application.last_search_query, application.current_page)
+            application.message += " : page %s" % application.current_page
         else:
-            dlmp3.message = "No previous songs to display"
-    dlmp3.content = generate_songlist_display()
+            application.message = "No previous songs to display"
+    application.content = generate_songlist_display()
 
 def showconfig(_):
     """ Dump config data. """
     s = "  %s%-17s%s : \"%s\"\n"
     out = "  %s%-17s   %s%s%s\n" % (Color.underline, "Option", "Valeur", " " * 40, Color.white)
-    for setting in dlmp3.config:
-        out += s % (Color.green, setting.lower(), Color.white, getattr(Config, setting))
-    dlmp3.content = out
-    dlmp3.message = "Entrer %sc <option> <valeur>%s pour modifier" % (Color.green, Color.white)
+    for key, value in config.getitem().items():
+        out += s % (Color.green, key.lower(), Color.white, value)
+    application.content = out
+    application.message = "Entrer %sc <option> <valeur>%s pour modifier" % (Color.green, Color.white)
 
 def setconfig(key, val):
     """ Set configuration variable. """
     # pylint: disable=R0912
     success_msg = fail_msg = ""
     key = key.upper()
-    if key == "ALL" and val.upper() == "DEFAULT":
-        for k, v in dlmp3.defaults.items():
-            setattr(Config, k, v)
-            success_msg = "Default configuration reinstated"
-    elif key == "DLDIR" and not val.upper() == "DEFAULT":
+    if key == "DLDIR" and not val.upper() == "DEFAULT":
         valid = os.path.exists(val) and os.path.isdir(val)
         if valid:
-            setattr(Config, key, val)
+            new_config = config.getitem()
+            setattr(config, key, val)
             success_msg = "Downloads will be saved to %s%s%s" % (Color.yellow, val, Color.white)
         else:
             fail_msg = "Invalid path: %s%s%s" % (Color.red, val, Color.white)
-    elif key in dlmp3.configbool and not val.upper() == "DEFAULT":
-        if val.upper() in "0 FALSE OFF NO".split():
-            setattr(Config, key, False)
-            success_msg = "%s set to disabled (restart may be required)" % key
-        else:
-            setattr(Config, key, True)
-            success_msg = "%s set to enabled (restart may be required)" % key
-    elif key in dlmp3.config:
-        if val.upper() == "DEFAULT":
-            val = dlmp3.defaults[key]
-        setattr(Config, key, val)
-        success_msg = "%s has been set to %s" % (key.upper(), val)
     else:
         fail_msg = "Unknown config item: %s%s%s" % (Color.red, key, Color.white)
     showconfig(1)
     if success_msg:
-        dlmp3.saveconfig()
-        dlmp3.message = success_msg
+        config.save()
+        application.message = success_msg
     elif fail_msg:
-        dlmp3.message = fail_msg
+        application.message = fail_msg
 
 def main():
     """ Main control loop. """
-    # update screen
-    if not sys.argv[1:]:
-        dlmp3.message = "Rechercher la musique que vous voulez " + Color.blue + "- [h]elp, [t]op, [c]config, [q]uit" + Color.white
+    if os.path.exists(config.CFFILE):
+        config.load(config.CFFILE)
+    application.message = "Rechercher la musique que vous voulez " + Color.blue + "- [h]elp, [t]op, [c]config, [q]uit" + Color.white
     screen_update()
-    # get cmd line input
-    inp = " ".join(sys.argv[1:])
     # input types
     regx = {
         'show_help': r'h$',
@@ -307,20 +289,18 @@ def main():
     while True:
         try:
             # get user input
-            userinput = inp or compat_input(prompt)
-            userinput = userinput.strip()
+            userinput = compat_input(prompt).strip()
         except (KeyboardInterrupt, EOFError):
             userinput = prompt_for_exit()
-        inp = None
         for k, v in regx.items():
             if v.match(userinput):
                 func, matches = k, v.match(userinput).groups()
                 try:
                     globals()[func](*matches)
                 except IndexError:
-                    dlmp3.message = Color.red + "Invalid item / range entered!" + Color.white
+                    application.message = Color.red + "Invalid item / range entered!" + Color.white
                 break
         else:
             if userinput:
-                dlmp3.message = Color.blue + "Bad syntax. Enter h for help" + Color.white
+                application.message = Color.blue + "Bad syntax. Enter h for help" + Color.white
         screen_update()
