@@ -11,15 +11,14 @@ class Launcher(object):
         self.PORT = 5000
         self.DEBUG = False
 
-    def mode_server(self):
-        """ Launch the web server. """
-        import runserver
-        runserver.main()
-    
-    def mode_terminal(self):
-        """ Launch the application in terminal mode. """
-        import terminal
-        terminal.main()
+    def start(self):
+        """ Launch the application. """
+        if self.CLI:
+            import terminal
+            terminal.main()
+        else:
+            import runserver
+            runserver.main()
 
 
 launcher = Launcher()
@@ -105,13 +104,3 @@ if has_readline:
     READLINE_FILE = os.path.join(get_config_dir(), "input_history")
     if os.path.exists(READLINE_FILE):
         readline.read_history_file(READLINE_FILE)
-
-def launch_server():
-    """ Launch the web server. """
-    import runserver
-    runserver.main()
-
-def launch_terminal():
-    """ Launch the application in terminal mode. """
-    import terminal
-    terminal.main()

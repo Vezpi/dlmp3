@@ -22,12 +22,9 @@ def dlmp3_launcher():
             launcher.DAEMON = True
         if args.port:
         	launcher.PORT = args.port
-        	print (launcher.PORT)
         if args.debug:
         	launcher.DEBUG = True
-        launcher.mode_server()
-    else:
-        launcher.mode_terminal()
+    launcher.start()
 
 if __name__ == '__main__':
     dlmp3_launcher()
