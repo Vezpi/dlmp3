@@ -73,16 +73,6 @@ class Config(object):
     CONFDIR = get_config_dir()
 
 
-class Color(object):
-    """ Class for holding colour code values. """
-    white = "\x1b[%sm" % 0
-    underline = "\x1b[%sm" * 3 % (2, 4, 33)
-    cols = ["\x1b[%sm" % n for n in range(91, 96)]
-    red, green, yellow, blue, pink = cols
-    if not Config.COLOURS:
-        ul = red = green = yellow = blue = pink = white = ""
-
-
 config = [x for x in sorted(dir(Config)) if member_var(x)]
 configbool = [x for x in config if type(getattr(Config, x)) is bool]
 defaults = {setting: getattr(Config, setting) for setting in config}

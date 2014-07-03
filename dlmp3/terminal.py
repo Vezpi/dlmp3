@@ -18,8 +18,19 @@ else:
     compat_input = raw_input
 
 import dlmp3
-from dlmp3 import Color, Config
+from dlmp3 import Config
 import searcher
+
+
+class Color(object):
+    """ Class for holding colour code values. """
+    white = "\x1b[%sm" % 0
+    underline = "\x1b[%sm" * 3 % (2, 4, 33)
+    cols = ["\x1b[%sm" % n for n in range(91, 96)]
+    red, green, yellow, blue, pink = cols
+    if not Config.COLOURS:
+        ul = red = green = yellow = blue = pink = white = ""
+
 
 HELP = """
 {0}Rercherche{1}
@@ -134,14 +145,15 @@ def top(period, page=1):
 
 def search(term, page=1):
     """ Perform search. """
-    dlmp3.message = "Rercherche de '%s%s%s'" % (Color.yellow, term.replace(" +tous", ""), Color.white)
+    show_term = term.replace(" +tous", "")
+    dlmp3.message = "Rercherche de '%s%s%s'" % (Color.yellow, show_term, Color.white)
     screen_update()
     songs = searcher.do_search(term, page)
     if songs:
-        dlmp3.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, term, Color.white)
+        dlmp3.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, show_term, Color.white)
         dlmp3.content = generate_songlist_display()
     else:
-        dlmp3.message = "Rien trouvé pour %s%s%s" % (Color.yellow, term, Color.white)
+        dlmp3.message = "Rien trouvé pour %s%s%s" % (Color.yellow, show_term, Color.white)
 
 def downloading(song, filename):
     """ Download file, show status, return filename. """
