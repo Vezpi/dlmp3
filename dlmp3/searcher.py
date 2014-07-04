@@ -7,10 +7,19 @@ import json
 import re
 import os
 
-opener = build_opener()
-ua = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
-opener.addheaders = [("User-Agent", ua)]
-urlopen = opener.open
+
+class UrlOpener(object):
+    """ Website opener. """
+
+    def __init__(self):
+        self.opener = build_opener()
+        self.ua = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
+        self.opener.addheaders = [("User-Agent", self.ua)]
+        self.urlopen = self.opener.open
+
+
+urlopener = UrlOpener().urlopen
+
 
 def tidy(raw, field):
     """ Tidy HTML entities, format songlength if field is duration.  """
@@ -69,7 +78,7 @@ def get_top(period="w", page=1):
            "page_ru=1&page_en=%s")
     url = url % ("e%s" % period, page)
     try:
-        wdata = urlopen(url).read().decode("utf8")
+        wdata = urlopener(url).read().decode("utf8")
     except (URLError, HTTPError) as e:
         application.message = Color.red +  "no data" + Color.white
         return
@@ -78,6 +87,15 @@ def get_top(period="w", page=1):
     html_ol = match.group(0)
     application.songlist = get_tracks_from_page(html_ol)
     songs = application.songlist
+    return songs
+
+def deezer():
+    deezer_id = 0
+    url = "http://api.deezer.com/editorial/%s/charts"
+    url = url % deezer_id 
+    wdata = json.loads(urlopener(url).read()) # dict (unicode)
+    songs = wdata["tracks"]["data"] # 10 top tracks
+    application.songlist = songs
     return songs
 
 def do_search(term, page=1):
@@ -93,7 +111,7 @@ def do_search(term, page=1):
     query = [(k, query[k]) for k in sorted(query.keys())]
     url = "%s?%s" % (url, urlencode(query))
     try:
-        wdata = urlopen(url).read().decode("utf8")
+        wdata = urlopener(url).read().decode("utf8")
         songs = get_tracks_from_page(wdata)
     except (URLError, HTTPError) as e:
         application.message = Color.red +  "no data" + Color.white
@@ -124,12 +142,12 @@ def get_stream(song, force=False):
         url = url % song['link']
         try:
             # dbg("[0] fetching " + url)
-            wdata = urlopen(url, timeout=7).read().decode("utf8")
+            wdata = urlopener(url, timeout=7).read().decode("utf8")
             # dbg("fetched " + url)
         except (HTTPError, socket.timeout):
             time.sleep(2)  # try again
             # dbg("[1] fetching 2nd attempt ")
-            wdata = urlopen(url, timeout=7).read().decode("utf8")
+            wdata = urlopener(url, timeout=7).read().decode("utf8")
             # dbg("fetched 2nd attempt" + url)
         j = json.loads(wdata)
         if not j.get("track_link"):

@@ -95,34 +95,47 @@ def uea_rpad(num, t):
         t = t + (" " * (num - real_len(t)))
     return t
 
-def generate_songlist_display(song=False):
+def generate_songlist_display(song=False, deezer=False):
     """ Generate list of choices from a song list."""
     songs = application.songlist or []
     if not songs:
         return
-    fmtrow = "%s %-6s %-9s %-44s %-44s %-9s %-7s%s\n"
-    head = (Color.underline, "Item", "Size", "Artist", "Track", "Length", "Bitrate", Color.white)
-    out = "\n" + fmtrow % head
-    for n, x in enumerate(songs):
-        col = (Color.red if n % 2 == 0 else Color.pink) if not song else Color.blue
-        size = x.get('size') or 0
-        title = x.get('song') or "unknown title"
-        artist = x.get('singer') or "unknown artist"
-        bitrate = x.get('listrate') or "unknown"
-        duration = x.get('duration') or "unknown length"
-        art, tit = uea_trunc(44, artist), uea_trunc(44, title)
-        art, tit = uea_rpad(44, art), uea_rpad(44, tit)
-        fmtrow = "%s %-6s %-9s %s %s %-9s %-7s%s\n"
-        size = str(size)[:3]
-        size = size[0:2] + " " if size[2] == "." else size
-        if not song or song != songs[n]:
-            out += (fmtrow % (col, str(n + 1), size + " Mb",
-                              art, tit, duration[:8], bitrate[:6], Color.white))
-        else:
-            out += (fmtrow % (Color.pink, str(n + 1), size + " Mb",
-                              art, tit, duration[:8], bitrate[:6], Color.white))
-    return out + "\n" * (5 - len(songs)) if not song else out
-
+    if not deezer:
+        fmtrow = "%s %-6s %-9s %-44s %-44s %-9s %-7s%s\n"
+        head = (Color.underline, "Item", "Size", "Artist", "Track", "Length", "Bitrate", Color.white)
+        out = "\n" + fmtrow % head
+        for n, x in enumerate(songs):
+            col = (Color.red if n % 2 == 0 else Color.pink) if not song else Color.blue
+            size = x.get('size') or 0
+            title = x.get('song') or "unknown title"
+            artist = x.get('singer') or "unknown artist"
+            bitrate = x.get('listrate') or "unknown"
+            duration = x.get('duration') or "unknown length"
+            art, tit = uea_trunc(44, artist), uea_trunc(44, title)
+            art, tit = uea_rpad(44, art), uea_rpad(44, tit)
+            fmtrow = "%s %-6s %-9s %s %s %-9s %-7s%s\n"
+            size = str(size)[:3]
+            size = size[0:2] + " " if size[2] == "." else size
+            if not song or song != songs[n]:
+                out += (fmtrow % (col, str(n + 1), size + " Mb",
+                                  art, tit, duration[:8], bitrate[:6], Color.white))
+            else:
+                out += (fmtrow % (Color.pink, str(n + 1), size + " Mb",
+                                  art, tit, duration[:8], bitrate[:6], Color.white))
+        return out + "\n" * (5 - len(songs)) if not song else out
+    else:
+        fmtrow = "%s %-6s%-44s %-44s%s\n"
+        head = (Color.underline, "Item", "Artist", "Track", Color.white)
+        out = "\n" + fmtrow % head
+        for number, track in enumerate(songs):
+            col = (Color.red if number % 2 == 0 else Color.pink) if not song else Color.blue
+            title = track['title'] or "unknown title"
+            artist = track['artist']['name'] or "unknown artist"
+            if not song or song != songs[number]:
+                out += (fmtrow % (col, str(number + 1), artist, title, Color.white))
+            else:
+                out += (fmtrow % (Color.pink, str(number + 1), artist, title, Color.white))
+        return out + "\n" * (5 - len(songs)) if not song else ou
 
 def show_message(message, col=Color.red, update=False):
     """ Show message using col, update screen if required. """
@@ -132,15 +145,21 @@ def show_message(message, col=Color.red, update=False):
         screen_update()
 
 def top(period, page=1):
-    original_period = period
-    period = period or "w"
-    periods = "_ w 3m 6m year all".split()
-    period = periods.index(period)
-    tps = "past week,past 3 months,past 6 months,past year,all time".split(",")
-    msg = ("%sTop tracks for %s%s" % (Color.yellow, tps[period - 1], Color.white))
-    application.message = msg
-    searcher.get_top(original_period, page)
-    application.content = generate_songlist_display()
+    if period == "deezer" or period == "d":
+        msg = ("%sTop tracks from Deezer%s" % (Color.yellow, Color.white))
+        application.message = msg
+        searcher.deezer()
+        application.content = generate_songlist_display(deezer=True)
+    else:
+        original_period = period
+        period = period or "w"
+        periods = "_ w 3m 6m year all".split()
+        period = periods.index(period)
+        tps = "past week,past 3 months,past 6 months,past year,all time".split(",")
+        msg = ("%sTop tracks for %s%s" % (Color.yellow, tps[period - 1], Color.white))
+        application.message = msg
+        searcher.get_top(original_period, page)
+        application.content = generate_songlist_display()
 
 def search(term, page=1):
     """ Perform search. """
@@ -278,7 +297,7 @@ def main():
         'search': r'([a-zA-Z]\w.{0,500})',
         'download': r'(\d{1,2})$',
         'nextprev': r'(n|p)$',
-        'top': r't\s*(|3m|6m|year|all)\s*$',
+        'top': r't\s*(|3m|6m|year|all|deezer|d)\s*$',
         'showconfig': r'(c)$',
         'setconfig': r'c\s*(\w+)\s*"?([^"]*)"?\s*$',
         'quits': r'q$',
