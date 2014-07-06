@@ -76,6 +76,7 @@ class Config(object):
         self.DLDIR = self.get_default_dldir()
         self.READLINE_FILE = None
         self.CFFILE = os.path.join(self.get_config_dir(), "dlmp3.config")
+        self.SOURCE = "pleer"
 
     def getitem(self):
         return self.__dict__

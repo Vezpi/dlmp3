@@ -95,12 +95,14 @@ def uea_rpad(num, t):
         t = t + (" " * (num - real_len(t)))
     return t
 
-def generate_songlist_display(song=False, deezer=False):
+def generate_songlist_display(song=False):
     """ Generate list of choices from a song list."""
     songs = application.songlist or []
+    import pdb
+    pdb.set_trace()
     if not songs:
         return
-    if not deezer:
+    if config.SOURCE == "pleer":
         fmtrow = "%s %-6s %-9s %-44s %-44s %-9s %-7s%s\n"
         head = (Color.underline, "Item", "Size", "Artist", "Track", "Length", "Bitrate", Color.white)
         out = "\n" + fmtrow % head
@@ -123,19 +125,34 @@ def generate_songlist_display(song=False, deezer=False):
                 out += (fmtrow % (Color.pink, str(n + 1), size + " Mb",
                                   art, tit, duration[:8], bitrate[:6], Color.white))
         return out + "\n" * (5 - len(songs)) if not song else out
-    else:
+    elif config.SOURCE == "deezer":
         fmtrow = "%s %-6s%-44s %-44s%s\n"
         head = (Color.underline, "Item", "Artist", "Track", Color.white)
         out = "\n" + fmtrow % head
-        for number, track in enumerate(songs):
+        for number, x in enumerate(songs):
             col = (Color.red if number % 2 == 0 else Color.pink) if not song else Color.blue
-            title = track['title'] or "unknown title"
-            artist = track['artist']['name'] or "unknown artist"
+            title = x['title'] or "unknown title"
+            artist = x['artist']['name'] or "unknown artist"
             if not song or song != songs[number]:
                 out += (fmtrow % (col, str(number + 1), artist, title, Color.white))
             else:
                 out += (fmtrow % (Color.pink, str(number + 1), artist, title, Color.white))
-        return out + "\n" * (5 - len(songs)) if not song else ou
+        return out + "\n" * (5 - len(songs)) if not song else out
+    elif config.SOURCE == "mp3download":
+        fmtrow = "%s %-6s %-9s %-88s %-9s%s\n"
+        head = (Color.underline, "Item", "Size", "Track", "Length", Color.white)
+        out = "\n" + fmtrow % head
+        for number, x in enumerate(songs):
+            col = (Color.red if number % 2 == 0 else Color.pink) if not song else Color.blue
+            track = x[0]
+            size = x[3] + " " + x[4]
+            duration = x[2]
+            if not song or song != songs[number]:
+                out += (fmtrow % (col, str(number + 1), size, track, duration, Color.white))
+            else:
+                out += (fmtrow % (Color.pink, str(number + 1), size, track, duration, Color.white))
+        return out + "\n" * (5 - len(songs)) if not song else out
+        return
 
 def show_message(message, col=Color.red, update=False):
     """ Show message using col, update screen if required. """
@@ -149,7 +166,7 @@ def top(period, page=1):
         msg = ("%sTop tracks from Deezer%s" % (Color.yellow, Color.white))
         application.message = msg
         searcher.deezer()
-        application.content = generate_songlist_display(deezer=True)
+        application.content = generate_songlist_display()
     else:
         original_period = period
         period = period or "w"
@@ -166,7 +183,7 @@ def search(term, page=1):
     show_term = term.replace(" +tous", "")
     application.message = "Rercherche de '%s%s%s'" % (Color.yellow, show_term, Color.white)
     screen_update()
-    songs = searcher.do_search(term, page)
+    songs = searcher.do_search(term, config.SOURCE, page)
     if songs:
         application.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, show_term, Color.white)
         application.content = generate_songlist_display()
@@ -175,29 +192,41 @@ def search(term, page=1):
 
 def downloading(song, filename):
     """ Download file, show status, return filename. """
-    xprint("Downloading %s%s%s ..\n" % (Color.green, filename, Color.white))
-    status_string = ('  {0}{1:,}{2} Bytes [{0}{3:.2%}{2}] received. Rate: '
+    if config.SOURCE == "pleer":
+        xprint("Downloading %s%s%s ..\n" % (Color.green, filename, Color.white))
+        status_string = ('  {0}{1:,}{2} Bytes [{0}{3:.2%}{2}] received. Rate: '
                      '[{0}{4:4.0f} kbps{2}].  ETA: [{0}{5:.0f} secs{2}]')
-    song['track_url'] = searcher.get_stream(song)
-    resp = searcher.urlopen(song['track_url'])
-    total = int(resp.info()['Content-Length'].strip())
-    chunksize, bytesdone, t0 = 16384, 0, time.time()
-    outfh = open(filename, 'wb')
-    while True:
-        chunk = resp.read(chunksize)
-        outfh.write(chunk)
-        elapsed = time.time() - t0
-        bytesdone += len(chunk)
-        rate = (bytesdone / 1024) / elapsed
-        eta = (total - bytesdone) / (rate * 1024)
-        stats = (Color.yellow, bytesdone, Color.white, bytesdone * 1.0 / total, rate, eta)
-        if not chunk:
-            outfh.close()
-            break
-        status = status_string.format(*stats)
-        sys.stdout.write("\r" + status + ' ' * 4 + "\r")
-        sys.stdout.flush()
-    return filename
+        song['track_url'] = searcher.get_stream(song)
+        resp = searcher.urlopener(song['track_url'])
+        total = int(resp.info()['Content-Length'].strip())
+        chunksize, bytesdone, t0 = 16384, 0, time.time()
+        outfh = open(filename, 'wb')
+        while True:
+            chunk = resp.read(chunksize)
+            outfh.write(chunk)
+            elapsed = time.time() - t0
+            bytesdone += len(chunk)
+            rate = (bytesdone / 1024) / elapsed
+            eta = (total - bytesdone) / (rate * 1024)
+            stats = (Color.yellow, bytesdone, Color.white, bytesdone * 1.0 / total, rate, eta)
+            if not chunk:
+                outfh.close()
+                break
+            status = status_string.format(*stats)
+            sys.stdout.write("\r" + status + ' ' * 4 + "\r")
+            sys.stdout.flush()
+        return filename
+    else:
+        resp = searcher.urlopener(song[1])
+        outfh = open(filename, 'wb')
+        chunksize = 16384
+        while True:
+            chunk = resp.read(chunksize)
+            outfh.write(chunk)  
+            if not chunk:
+                outfh.close()
+                break
+        return filename              
 
 def download(num):
     """ Download a track. """
@@ -268,7 +297,7 @@ def setconfig(key, val):
     # pylint: disable=R0912
     success_msg = fail_msg = ""
     key = key.upper()
-    if key == "DLDIR" and not val.upper() == "DEFAULT":
+    if key == "DLDIR":
         valid = os.path.exists(val) and os.path.isdir(val)
         if valid:
             new_config = config.getitem()
@@ -276,6 +305,13 @@ def setconfig(key, val):
             success_msg = "Downloads will be saved to %s%s%s" % (Color.yellow, val, Color.white)
         else:
             fail_msg = "Invalid path: %s%s%s" % (Color.red, val, Color.white)
+    elif key == "SOURCE":
+        if val == "pleer" or val == "mp3download":
+            new_config = config.getitem()
+            setattr(config, key, val)
+            success_msg = "Search source is now %s%s%s" % (Color.yellow, val, Color.white)
+        else:
+            fail_msg = "Invalid source: %s%s%s" % (Color.red, val, Color.white)
     else:
         fail_msg = "Unknown config item: %s%s%s" % (Color.red, key, Color.white)
     showconfig(1)

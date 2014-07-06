@@ -1,6 +1,7 @@
 from dlmp3 import application, config
 from urllib2 import build_opener, HTTPError, URLError
 from urllib import urlencode
+from HTMLParser import HTMLParser
 import time
 import socket
 import json
@@ -8,18 +9,61 @@ import re
 import os
 
 
-class UrlOpener(object):
-    """ Website opener. """
-
+class Mp3DownloadParser(HTMLParser):
     def __init__(self):
-        self.opener = build_opener()
-        self.ua = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
-        self.opener.addheaders = [("User-Agent", self.ua)]
-        self.urlopen = self.opener.open
+        HTMLParser.__init__(self)
+        self.in_list = False # in <li>
+        self.print_data = False # 
+        self.in_track = False
+        self.title = False
+        self.track = []
+        self.list_count = 0
+        self.last_count = 0
+    def handle_starttag(self, tag, attr):
+        if tag == "li":
+            self.in_list = True
+            self.list_count += 1
+        if tag == "h4":
+            self.print_data = True
+            self.in_track = True
+            self.title = True
+            self.track = []
+        if self.in_track:
+            if tag == "a":
+                for tuples in attr:
+                    if tuples[0] == "href":
+                        self.track.append(tuples[1])
+            if tag == "div":
+                self.print_data = True
+                application.songlist.append(self.track)                
+    def handle_data(self, data):
+        if self.print_data:
+            if self.title:
+                data = data.replace('.mp3 download', '')
+                if not self.last_count == self.list_count:
+                    self.last_count += 1
+                    self.track.append(data)
+                else:
+                    self.track[-1] = self.track[-1] + data
+            else:
+                data = data.replace('\n', '').replace(' ', '')
+                self.track.append(data)
+    def handle_endtag(self, tag):
+        if tag == "h4":
+            self.print_data = False
+            self.title = False
+        if self.in_track:
+            if tag == "div":
+                self.print_data = False
+            if tag == "li":
+                self.in_track = False
+                self.in_list = False
 
 
-urlopener = UrlOpener().urlopen
-
+opener = build_opener()
+ua = "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"
+opener.addheaders = [("User-Agent", ua)]
+urlopener = opener.open
 
 def tidy(raw, field):
     """ Tidy HTML entities, format songlength if field is duration.  """
@@ -98,8 +142,20 @@ def deezer():
     application.songlist = songs
     return songs
 
-def do_search(term, page=1):
-    """ Perform search. """
+def mp3download(term):
+    original_term = term
+    url = "http://mp3download.pw/mp3/"
+    term = term.replace(" ", "-")
+    url = url + term
+    wdata = urlopener(url).read()
+    application.songlist = []
+    parser = Mp3DownloadParser()
+    parser.feed(wdata)
+    songs = application.songlist
+    application.last_search_query = original_term
+    return songs
+
+def pleer(term, page):
     original_term = term
     url = "http://pleer.com/search"
     query = {"target": "tracks", "page": page}
@@ -127,11 +183,24 @@ def do_search(term, page=1):
         application.last_search_query = ""
         return
 
+def do_search(term, source, page=1):
+    """ Perform search. """
+    if source == "pleer":
+        songs = pleer(term, page)
+    elif source == "mp3download":
+        songs = mp3download(term)
+    else:
+        return
+    return songs
+
 def make_filename(song):
     """" Create download directory, generate filename. """
     if not os.path.exists(config.DLDIR):
         os.makedirs(config.DLDIR)
-    filename = song['singer'][:49] + " - " + song['song'][:49] + ".mp3"
+    if config.SOURCE == "pleer":
+        filename = song['singer'][:49] + " - " + song['song'][:49] + ".mp3"
+    else:
+        filename = song[0] + ".mp3"
     filename = os.path.join(config.DLDIR, filename)
     return filename
 
