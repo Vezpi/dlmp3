@@ -17,8 +17,6 @@ def dlmp3_launcher():
     args = parser.parse_args()
     if args.web:
         launcher.CLI = False
-        if args.daemon:
-            launcher.DAEMON = True
         if args.port:
         	launcher.PORT = args.port
         if args.debug:

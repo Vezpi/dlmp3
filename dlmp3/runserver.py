@@ -8,8 +8,6 @@ server.config['PERMANENT_SESSION_LIFETIME'] = 600
 server.config['PASSWORD'] = "cl"
 
 def main():
-    if os.path.exists(config.CFFILE):
-        config.load(config.CFFILE)
     server.run(port=launcher.PORT)
 
 import views

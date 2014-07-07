@@ -10,12 +10,13 @@ class Launcher(object):
     def __init__(self):
     	""" Application options. """
         self.CLI = True
-        self.DAEMON = False
         self.PORT = 5000
         self.DEBUG = False
 
     def start(self):
         """ Launch the application. """
+        if os.path.exists(config.CFFILE):
+        	config.load(config.CFFILE)
         if self.CLI:
             import terminal
             terminal.main()
