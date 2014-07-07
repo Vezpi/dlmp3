@@ -13,7 +13,7 @@
 
 DESC="MP3 Downloader"
 NAME=dlmp3
-APP_PATH=/home/vezpi/project/$NAME
+APP_PATH=/appli/$NAME
 DAEMON=${NAME}.py
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME

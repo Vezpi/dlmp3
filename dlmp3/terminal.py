@@ -98,8 +98,6 @@ def uea_rpad(num, t):
 def generate_songlist_display(song=False):
     """ Generate list of choices from a song list."""
     songs = application.songlist or []
-    import pdb
-    pdb.set_trace()
     if not songs:
         return
     if config.SOURCE == "pleer":
@@ -183,7 +181,7 @@ def search(term, page=1):
     show_term = term.replace(" +tous", "")
     application.message = "Rercherche de '%s%s%s'" % (Color.yellow, show_term, Color.white)
     screen_update()
-    songs = searcher.do_search(term, config.SOURCE, page)
+    songs = searcher.do_search(term, page)
     if songs:
         application.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, show_term, Color.white)
         application.content = generate_songlist_display()

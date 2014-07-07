@@ -183,11 +183,11 @@ def pleer(term, page):
         application.last_search_query = ""
         return
 
-def do_search(term, source, page=1):
+def do_search(term, page=1):
     """ Perform search. """
-    if source == "pleer":
+    if config.SOURCE == "pleer":
         songs = pleer(term, page)
-    elif source == "mp3download":
+    elif config.SOURCE == "mp3download":
         songs = mp3download(term)
     else:
         return
