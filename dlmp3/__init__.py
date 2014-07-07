@@ -38,6 +38,7 @@ class Application(object):
         self.last_opened = ""
         self.message = ""
         self.content = ""
+        self.deezer = False
 
     
 application = Application()

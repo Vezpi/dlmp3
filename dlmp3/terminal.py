@@ -39,13 +39,20 @@ Si la recherche ne retourne pas ce que vous voulez, ajouter {2}+tous{1}
 pour rechercher dans toutes les qualités de son.
 Utiliser {2}n{1} et {2}p{1} pour naviguer parmis les differentes pages.
 
+{0}Source{1}
+Deux sources de téléchargement sont disponibles :
+Pleer.com
+Mp3download.pw
+Pour sélectionner une source, entrer {2}c source <pleer / mp3download>{1}
+
 {0}Téléchargement{1}
 Quand une liste de musiques est affiché à l'écran, entrer le numéro
 de la chanson correspondante pour la télécharger.
 
 {0}Top{1}
-Entrer {2}t{1} ({2}+ 3m{1}, {2}6m{1}, {2}year{1}, {2}all{1}) pour afficher le top charts associé.
+Entrer {2}t{1} ({2}+ d/deezer{1}, {2}3m{1}, {2}6m{1}, {2}year{1}, {2}all{1}) pour afficher le top charts associé.
 Defaut : Semaine
+{2}d/deezer{1} : Deezer
 {2}3m{1} : 3 mois
 {2}6m{1} : 6 mois
 {2}year{1} : annuel
@@ -100,7 +107,21 @@ def generate_songlist_display(song=False):
     songs = application.songlist or []
     if not songs:
         return
-    if config.SOURCE == "pleer":
+    if application.deezer:
+        application.deezer = False
+        fmtrow = "%s %-6s%-44s %-44s%s\n"
+        head = (Color.underline, "Item", "Artist", "Track", Color.white)
+        out = "\n" + fmtrow % head
+        for number, x in enumerate(songs):
+            col = (Color.red if number % 2 == 0 else Color.pink) if not song else Color.blue
+            title = x['title'] or "unknown title"
+            artist = x['artist']['name'] or "unknown artist"
+            if not song or song != songs[number]:
+                out += (fmtrow % (col, str(number + 1), artist, title, Color.white))
+            else:
+                out += (fmtrow % (Color.pink, str(number + 1), artist, title, Color.white))
+        return out + "\n" * (5 - len(songs)) if not song else out
+    elif config.SOURCE == "pleer":
         fmtrow = "%s %-6s %-9s %-44s %-44s %-9s %-7s%s\n"
         head = (Color.underline, "Item", "Size", "Artist", "Track", "Length", "Bitrate", Color.white)
         out = "\n" + fmtrow % head
@@ -122,19 +143,6 @@ def generate_songlist_display(song=False):
             else:
                 out += (fmtrow % (Color.pink, str(n + 1), size + " Mb",
                                   art, tit, duration[:8], bitrate[:6], Color.white))
-        return out + "\n" * (5 - len(songs)) if not song else out
-    elif config.SOURCE == "deezer":
-        fmtrow = "%s %-6s%-44s %-44s%s\n"
-        head = (Color.underline, "Item", "Artist", "Track", Color.white)
-        out = "\n" + fmtrow % head
-        for number, x in enumerate(songs):
-            col = (Color.red if number % 2 == 0 else Color.pink) if not song else Color.blue
-            title = x['title'] or "unknown title"
-            artist = x['artist']['name'] or "unknown artist"
-            if not song or song != songs[number]:
-                out += (fmtrow % (col, str(number + 1), artist, title, Color.white))
-            else:
-                out += (fmtrow % (Color.pink, str(number + 1), artist, title, Color.white))
         return out + "\n" * (5 - len(songs)) if not song else out
     elif config.SOURCE == "mp3download":
         fmtrow = "%s %-6s %-9s %-88s %-9s%s\n"
@@ -163,6 +171,7 @@ def top(period, page=1):
     if period == "deezer" or period == "d":
         msg = ("%sTop tracks from Deezer%s" % (Color.yellow, Color.white))
         application.message = msg
+        application.deezer = True
         searcher.deezer()
         application.content = generate_songlist_display()
     else:
@@ -327,7 +336,7 @@ def main():
     screen_update()
     # input types
     regx = {
-        'show_help': r'h$',
+        'show_help': r'(h|\?)$',
         'search': r'([a-zA-Z]\w.{0,500})',
         'download': r'(\d{1,2})$',
         'nextprev': r'(n|p)$',
@@ -351,9 +360,9 @@ def main():
                 try:
                     globals()[func](*matches)
                 except IndexError:
-                    application.message = Color.red + "Invalid item / range entered!" + Color.white
+                    application.message = Color.red + "Item invalide" + Color.white
                 break
         else:
             if userinput:
-                application.message = Color.blue + "Bad syntax. Enter h for help" + Color.white
+                application.message = Color.blue + "Saisie incorrecte. Entrer ? pour l'aide" + Color.white
         screen_update()
