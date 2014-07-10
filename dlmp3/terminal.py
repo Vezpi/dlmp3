@@ -8,17 +8,12 @@ import os
 
 # Python 3 compatibility hack
 if sys.version_info[:2] >= (3, 0):
-    # pylint: disable=E0611,F0401
-    py2utf8_encode = lambda x: x
-    py2utf8_decode = lambda x: x
     compat_input = input
 else:
-    py2utf8_encode = lambda x: x.encode("utf8") if type(x) == unicode else x
-    py2utf8_decode = lambda x: x.decode("utf8") if type(x) == str else x
     compat_input = raw_input
 
-from dlmp3 import application, config
-import searcher
+from dlmp3 import config, session
+from searcher import Search
 
 
 class Color(object):
@@ -65,24 +60,6 @@ Entrer {2}c{1} pour afficher la configuration.
 Entrer {2}q{1} pour quitter.
 """.format(Color.underline, Color.white, Color.green, Color.red)
 
-def xprint(stuff):
-    """ Compatible print. """
-    print(xenc(stuff))
-
-def xenc(stuff):
-    """ Encode for non utf8 environments and python 2. """
-    # stuff = non_utf8_encode(stuff)
-    stuff = py2utf8_encode(stuff)
-    return stuff
-
-def screen_update():
-    """ Display content, show message, blank screen."""
-    if application.content:
-        xprint(application.content)
-    if application.message:
-        xprint(application.message)
-    application.message = application.content = ""
-
 def real_len(u):
     """ Try to determine width of strings displayed with monospace font. """
     ueaw = unicodedata.east_asian_width
@@ -104,18 +81,17 @@ def uea_rpad(num, t):
 
 def generate_songlist_display(song=False):
     """ Generate list of choices from a song list."""
-    songs = application.songlist or []
+    songs = session.songlist.songs or []
     if not songs:
         return
-    if application.deezer:
-        application.deezer = False
+    if session.search.nature == "charts" and session.search.term ==  "deezer":
         fmtrow = "%s %-6s%-44s %-44s%s\n"
         head = (Color.underline, "Item", "Artist", "Track", Color.white)
         out = "\n" + fmtrow % head
         for number, x in enumerate(songs):
             col = (Color.red if number % 2 == 0 else Color.pink) if not song else Color.blue
-            title = x['title'] or "unknown title"
-            artist = x['artist']['name'] or "unknown artist"
+            title = x.title or "unknown title"
+            artist = x.artist or "unknown artist"
             if not song or song != songs[number]:
                 out += (fmtrow % (col, str(number + 1), artist, title, Color.white))
             else:
@@ -127,21 +103,19 @@ def generate_songlist_display(song=False):
         out = "\n" + fmtrow % head
         for n, x in enumerate(songs):
             col = (Color.red if n % 2 == 0 else Color.pink) if not song else Color.blue
-            size = x.get('size') or 0
-            title = x.get('song') or "unknown title"
-            artist = x.get('singer') or "unknown artist"
-            bitrate = x.get('listrate') or "unknown"
-            duration = x.get('duration') or "unknown length"
+            size = x.size or 0
+            title = x.title or "unknown title"
+            artist = x.artist or "unknown artist"
+            bitrate = x.bitrate or "unknown"
+            duration = x.duration or "unknown length"
             art, tit = uea_trunc(44, artist), uea_trunc(44, title)
             art, tit = uea_rpad(44, art), uea_rpad(44, tit)
             fmtrow = "%s %-6s %-9s %s %s %-9s %-7s%s\n"
-            size = str(size)[:3]
-            size = size[0:2] + " " if size[2] == "." else size
             if not song or song != songs[n]:
-                out += (fmtrow % (col, str(n + 1), size + " Mb",
+                out += (fmtrow % (col, str(n + 1), size,
                                   art, tit, duration[:8], bitrate[:6], Color.white))
             else:
-                out += (fmtrow % (Color.pink, str(n + 1), size + " Mb",
+                out += (fmtrow % (Color.pink, str(n + 1), size,
                                   art, tit, duration[:8], bitrate[:6], Color.white))
         return out + "\n" * (5 - len(songs)) if not song else out
     elif config.SOURCE == "mp3download":
@@ -150,9 +124,9 @@ def generate_songlist_display(song=False):
         out = "\n" + fmtrow % head
         for number, x in enumerate(songs):
             col = (Color.red if number % 2 == 0 else Color.pink) if not song else Color.blue
-            track = x[0]
-            size = x[3] + " " + x[4]
-            duration = x[2]
+            track = x.track
+            size = x.size
+            duration = x.duration
             if not song or song != songs[number]:
                 out += (fmtrow % (col, str(number + 1), size, track, duration, Color.white))
             else:
@@ -160,135 +134,94 @@ def generate_songlist_display(song=False):
         return out + "\n" * (5 - len(songs)) if not song else out
         return
 
-def show_message(message, col=Color.red, update=False):
-    """ Show message using col, update screen if required. """
-    application.content = generate_songlist_display()
-    application.message = col + message + Color.white
-    if update:
-        screen_update()
-
-def top(period, page=1):
+def top(period):
     if period == "deezer" or period == "d":
-        msg = ("%sTop tracks from Deezer%s" % (Color.yellow, Color.white))
-        application.message = msg
-        application.deezer = True
-        searcher.deezer()
-        application.content = generate_songlist_display()
+        session.message = ("%sTop tracks from Deezer%s" % (Color.yellow, Color.white))
+        session.search = Search("charts", "deezer")
     else:
         original_period = period
         period = period or "w"
         periods = "_ w 3m 6m year all".split()
         period = periods.index(period)
         tps = "past week,past 3 months,past 6 months,past year,all time".split(",")
-        msg = ("%sTop tracks for %s%s" % (Color.yellow, tps[period - 1], Color.white))
-        application.message = msg
-        searcher.get_top(original_period, page)
-        application.content = generate_songlist_display()
+        session.message = ("%sTop tracks for %s%s" % (Color.yellow, tps[period - 1], Color.white))
+        session.search = Search("charts", original_period)
+    session.search.do()
+    session.content = generate_songlist_display()
 
-def search(term, page=1):
+def search(term):
     """ Perform search. """
+    session.search = Search("search", term)
     show_term = term.replace(" +tous", "")
-    application.message = "Rercherche de '%s%s%s'" % (Color.yellow, show_term, Color.white)
-    screen_update()
-    songs = searcher.do_search(term, page)
-    if songs:
-        application.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, show_term, Color.white)
-        application.content = generate_songlist_display()
+    session.message = "Rercherche de '%s%s%s'" % (Color.yellow, show_term, Color.white)
+    session.output()
+    if session.search.do():
+        session.message = "Résultats de la recherche pour %s%s%s" % (Color.yellow, show_term, Color.white)
+        session.content = generate_songlist_display()
     else:
-        application.message = "Rien trouvé pour %s%s%s" % (Color.yellow, show_term, Color.white)
-
-def downloading(song, filename):
-    """ Download file, show status, return filename. """
-    if config.SOURCE == "pleer":
-        xprint("Downloading %s%s%s ..\n" % (Color.green, filename, Color.white))
-        status_string = ('  {0}{1:,}{2} Bytes [{0}{3:.2%}{2}] received. Rate: '
-                     '[{0}{4:4.0f} kbps{2}].  ETA: [{0}{5:.0f} secs{2}]')
-        song['track_url'] = searcher.get_stream(song)
-        resp = searcher.urlopener(song['track_url'])
-        total = int(resp.info()['Content-Length'].strip())
-        chunksize, bytesdone, t0 = 16384, 0, time.time()
-        outfh = open(filename, 'wb')
-        while True:
-            chunk = resp.read(chunksize)
-            outfh.write(chunk)
-            elapsed = time.time() - t0
-            bytesdone += len(chunk)
-            rate = (bytesdone / 1024) / elapsed
-            eta = (total - bytesdone) / (rate * 1024)
-            stats = (Color.yellow, bytesdone, Color.white, bytesdone * 1.0 / total, rate, eta)
-            if not chunk:
-                outfh.close()
-                break
-            status = status_string.format(*stats)
-            sys.stdout.write("\r" + status + ' ' * 4 + "\r")
-            sys.stdout.flush()
-        return filename
-    else:
-        resp = searcher.urlopener(song[1])
-        outfh = open(filename, 'wb')
-        chunksize = 16384
-        while True:
-            chunk = resp.read(chunksize)
-            outfh.write(chunk)  
-            if not chunk:
-                outfh.close()
-                break
-        return filename              
+        session.message = "Rien trouvé pour %s%s%s" % (Color.yellow, show_term, Color.white)
 
 def download(num):
     """ Download a track. """
-    song = (application.songlist[int(num) - 1])
-    filename = searcher.make_filename(song)
+    song = (session.songlist.songs[int(num) - 1])
+    download = song.download()
     try:
-        f = downloading(song, filename)
-        application.message = "Downloaded " + Color.green + f + Color.white
+        download.start()
+        session.message = ("Downloading %s%s%s ...\n" % (Color.green, song.filename, Color.white))
+        session.output()
+        status_string = ('  {0}{1:,}{2} Bytes [{0}{3:.2%}{2}] received. Rate: '
+                     '[{0}{4:4.0f} kbps{2}].  ETA: [{0}{5:.0f} secs{2}]')
+        while True:
+            if not download.get():
+                break
+            stats = (Color.yellow, download.bytesdone, Color.white, download.bytesdone * 1.0 / download.total, download.rate, download.eta)
+            status = status_string.format(*stats)
+            sys.stdout.write("\r" + status + ' ' * 4 + "\r")
+            sys.stdout.flush()
+        session.message = "Downloaded " + Color.green + song.filename + Color.white
     except IndexError:
-        application.message = Color.red + "Invalid index" + Color.white
+        session.message = Color.red + "Invalid index" + Color.white
     except KeyboardInterrupt:
-        application.message = Color.red + "Download halted!" + Color.white
+        session.message = Color.red + "Download halted" + Color.white
         try:
             os.remove(filename)
         except IOError:
             pass
-    finally:
-        application.content = "\n"
+    finally:        
+        session.content = "\n"
 
 def show_help(helpname=None):
     """ Print help message. """
     print(HELP)
 
-def quits(showlogo=True):
+def quits():
     """ Exit the program. """
     sys.exit()
 
 def prompt_for_exit():
     """ Ask for exit confirmation. """
-    application.message = Color.red + "Press ctrl-c again to exit" + Color.white
-    application.content = generate_songlist_display()
-    screen_update()
+    session.message = Color.red + "Press ctrl-c again to exit" + Color.white
+    session.content = generate_songlist_display()
+    session.output()
     try:
         userinput = compat_input(Color.red + " > " + Color.white)
     except (KeyboardInterrupt, EOFError):
-        quits(showlogo=False)
+        quits()
     return userinput
 
 def nextprev(np):
     """ Get next / previous search results. """
     if np == "n":
-        if len(application.songlist) == 20 and application.last_search_query:
-            application.current_page += 1
-            search(application.last_search_query, application.current_page)
-            application.message += " : page %s" % application.current_page
+        if session.search.next():
+            session.message += " : page %s" % session.search.page
         else:
-            application.message = "No more songs to display"
-    elif np == "p":
-        if application.current_page > 1 and application.last_search_query:
-            application.current_page -= 1
-            search(application.last_search_query, application.current_page)
-            application.message += " : page %s" % application.current_page
+            session.message = "No more songs to display"
+    if np == "p":
+        if session.search.prev():
+            session.message += " : page %s" % session.search.page
         else:
-            application.message = "No previous songs to display"
-    application.content = generate_songlist_display()
+            session.message = "No previous songs to display"
+    session.content = generate_songlist_display()
 
 def showconfig(_):
     """ Dump config data. """
@@ -296,12 +229,11 @@ def showconfig(_):
     out = "  %s%-17s   %s%s%s\n" % (Color.underline, "Option", "Valeur", " " * 40, Color.white)
     for key, value in config.getitem().items():
         out += s % (Color.green, key.lower(), Color.white, value)
-    application.content = out
-    application.message = "Entrer %sc <option> <valeur>%s pour modifier" % (Color.green, Color.white)
+    session.content = out
+    session.message = "Entrer %sc <option> <valeur>%s pour modifier" % (Color.green, Color.white)
 
 def setconfig(key, val):
     """ Set configuration variable. """
-    # pylint: disable=R0912
     success_msg = fail_msg = ""
     key = key.upper()
     if key == "DLDIR":
@@ -324,16 +256,14 @@ def setconfig(key, val):
     showconfig(1)
     if success_msg:
         config.save()
-        application.message = success_msg
+        session.message = success_msg
     elif fail_msg:
-        application.message = fail_msg
+        session.message = fail_msg
 
 def main():
     """ Main control loop. """
-    if os.path.exists(config.CFFILE):
-        config.load(config.CFFILE)
-    application.message = "Rechercher la musique que vous voulez " + Color.blue + "- [h]elp, [t]op, [c]config, [q]uit" + Color.white
-    screen_update()
+    session.message = "Rechercher la musique que vous voulez " + Color.blue + "- [h]elp, [t]op, [c]config, [q]uit" + Color.white
+    session.output()
     # input types
     regx = {
         'show_help': r'(h|\?)$',
@@ -360,9 +290,9 @@ def main():
                 try:
                     globals()[func](*matches)
                 except IndexError:
-                    application.message = Color.red + "Item invalide" + Color.white
+                    session.message = Color.red + "Item invalide" + Color.white
                 break
         else:
             if userinput:
-                application.message = Color.blue + "Saisie incorrecte. Entrer ? pour l'aide" + Color.white
-        screen_update()
+                session.message = Color.blue + "Saisie incorrecte. Entrer ? pour l'aide" + Color.white
+        session.output()

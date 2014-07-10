@@ -1,15 +1,52 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-    <title>{{ name }}</title>
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
-    <div class=page>
-      <h1>{{ name }}</h1>
-      {% for message in get_flashed_messages() %}
-        <div class=flash>{{ message }}</div>
-      {% endfor %}
-      {% block body %}{% endblock %}
-    </div>
+    <meta charset="utf-8"/>
+    <meta name="author" content="Etienne Girault"/>
+    <title>DLMP3</title>
+    <link rel=stylesheet href="{{ url_for('static', filename='style/style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}" width="48">
   </head>
+  <body>
+    <header>
+    <!-- En-tête -->
+      <a href="/">
+        <div id="header-left">
+          <div id="logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}"/>
+          </div>
+          <div id="title-wrapper">
+            <h1>DLMP3</h1>
+            <h2>Music MP3 downloader</h2>
+          </div>
+        </div>
+      </a>
+      <div id="header-right">
+        <form action="{{ url_for('index') }}" method=post>
+          <input id="search" type="text" placeholder="Search for music" onfocus="if(this.value==this.defaultValue) this.value='';" name="recherche" />
+        </form>
+      </div>
+    </header>
+    <div id="page">
+      <div id="sidebar">
+        <nav>
+        <!-- Barre de navigation -->
+          <ul>
+            <li><a href="#">DL</a></li>
+            <li><a href="#">Top</a></li>
+            <li><a href="#">Config</a></li>
+          </ul>
+        </nav>
+        <section>
+          Je suis la sidebar
+        </section>
+      </div>
+      <section id="content">
+        {% for message in get_flashed_messages() %}
+          <div class=flash>{{ message }}</div>
+        {% endfor %}
+        {% block body %}{% endblock %}
+      </section>
+    </div>
+  </body>
 </html>

@@ -5,7 +5,7 @@ from dlmp3 import launcher
 import argparse
 
 __author__ = "Vezpi"
-__version__ = "0.01.0"
+__version__ = "0.02.0"
 __license__ = "GPLv3"
 
 def dlmp3_launcher():
@@ -18,9 +18,9 @@ def dlmp3_launcher():
     if args.web:
         launcher.CLI = False
         if args.port:
-        	launcher.PORT = args.port
+            launcher.PORT = args.port
         if args.debug:
-        	launcher.DEBUG = True
+            launcher.DEBUG = True
     launcher.start()
 
 if __name__ == '__main__':

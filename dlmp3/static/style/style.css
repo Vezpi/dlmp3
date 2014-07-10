@@ -1,0 +1,115 @@
+body {
+  margin: 0px;
+  padding: 0px;
+}
+/* HEADER */
+header {
+  position: fixed;
+  width: 100%;
+  display: inline-block;
+  height: 48px;
+  top: 0px;
+  left: 0px;
+  padding: 5px 5px 5px 0px;
+  background-image: linear-gradient(#FAFAFA, #EAEAEA) !important;
+  border-bottom: 1px solid #CACACA;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+#header-left {
+  float: left;
+  width: 30%;
+  height: inherit;
+}
+#header-right {
+  margin-left: 30%;
+  width: 70%;
+  height: inherit;
+  line-height: 48px;
+  text-align: center;
+}
+#logo {
+  text-align: center;
+  width: 30%;
+  float: left;
+}
+#title-wrapper {
+  margin-left: 30%;
+  padding-left: 25px;
+  font-family: "Trebuchet MS",Helvetica,Arial,sans-serif;
+}
+header h1 {
+  font-size: 1.2em;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  color: #000;
+}
+header h2 {
+  font-size: 1em;
+  font-weight: normal;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  color: #000;
+}
+#search {
+  border-right: 1px solid #DDD;
+  border-width: 1px;
+  border-style: solid;
+  border-color: #CDCDCD #DDD #DDD;
+  -moz-border-top-colors: none;
+  -moz-border-right-colors: none;
+  -moz-border-bottom-colors: none;
+  -moz-border-left-colors: none;
+  border-image: none;
+  box-shadow: 0px 1px 1px #E0E0E0 inset;
+  width: 85%;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  padding: 4px 5px 4px 15px;
+  font-size: 16px;
+  color: black;
+}
+/* PAGE */
+#page {
+  width: 100%;
+  display: inline-block;
+  top: 0px;
+  margin-left: 0px;
+  padding: 5px;
+  margin-top: 53px;
+}
+/* SIDEBAR */
+#sidebar {
+  background-color: #F7F7F7;
+  position: fixed;
+  float: left;
+  width: 30%;
+  height: 100%;
+  border-top: 1px solid #CACACA;
+  border-right: 1px solid #CACACA;
+  left: 0;
+}
+nav {
+  height: 48px;
+}
+nav ul {
+  width: 80%;
+  height: inherit;
+  margin: auto;
+  padding-left: 0px;
+}  
+nav li {
+  list-style-type: none;
+  width: 33%;
+  line-height: 48px;
+  text-align: center;
+  float: left;
+}
+#sidebar section {
+  clear: both;
+  padding: 20px;
+}
+/* CONTENT */
+#content {
+  margin-left: 30%;
+}

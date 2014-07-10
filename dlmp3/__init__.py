@@ -8,15 +8,15 @@ class Launcher(object):
     """ Holds Launcher options. """
 
     def __init__(self):
-    	""" Application options. """
+        """ Application options. """
         self.CLI = True
         self.PORT = 5000
         self.DEBUG = False
 
     def start(self):
         """ Launch the application. """
-        if os.path.exists(config.CFFILE):
-        	config.load(config.CFFILE)
+        if os.path.exists(session.CFFILE):
+            config.load(session.CFFILE)
         if self.CLI:
             import terminal
             terminal.main()
@@ -25,23 +25,23 @@ class Launcher(object):
             runserver.main()
 
 
-launcher = Launcher()
-
-
-class Application(object):
-    """ Holds the global application objects. """
+class Session(object):
+    """ Elements to be displayed to the user. """
 
     def __init__(self):
-        self.songlist = []
-        self.last_search_query = ""
-        self.current_page = 1
-        self.last_opened = ""
+        self.CFFILE = os.path.join(config.get_config_dir(), "dlmp3.config")
         self.message = ""
         self.content = ""
-        self.deezer = False
+        self.songlist = None
+        self.search = None
 
-    
-application = Application()
+    def output(self):
+        """ Display the messages on the terminal screen. """
+        if session.content:
+            print(self.content)
+        if session.message:
+            print(self.message)
+        self.message = self.content = ""
 
 
 class Config(object):
@@ -51,7 +51,6 @@ class Config(object):
         """ Get system default Download directory, append mps dir. """
         join, user = os.path.join, os.path.expanduser("~")
         USER_DIRS = join(user, ".config", "user-dirs.dirs")
-        # DOWNLOAD_HOME = join(user, "Downloads")
         if os.path.exists(USER_DIRS):
             lines = open(USER_DIRS).readlines()
             defn = [x for x in lines ]
@@ -61,11 +60,8 @@ class Config(object):
                 dldir = defn[0].split("=")[1]\
                     .replace('"', '')\
                     .replace("$HOME", user).strip()
-        # elif os.path.exists(DOWNLOAD_HOME):
-        #     dldir = DOWNLOAD_HOME
         else:
             dldir = user
-        # dldir = py2utf8_decode(dldir)
         return join(dldir, "dlmp3")
 
     def get_config_dir(self):
@@ -76,8 +72,6 @@ class Config(object):
     def __init__(self):
         self.COLOURS = True
         self.DLDIR = self.get_default_dldir()
-        self.READLINE_FILE = None
-        self.CFFILE = os.path.join(self.get_config_dir(), "dlmp3.config")
         self.SOURCE = "pleer"
 
     def getitem(self):
@@ -92,7 +86,7 @@ class Config(object):
             except OSError:
                 application.message = Color.red + "Impossible de créer le répertoire " + self.get_config_dir() + Color.white
         to_save = self.getitem()
-        pickle.dump(to_save, open(self.CFFILE, "wb"), protocol=2)
+        pickle.dump(to_save, open(session.CFFILE, "wb"), protocol=2)
 
     # override config if config file exists
     def load(self, pfile):
@@ -102,8 +96,6 @@ class Config(object):
             setattr(self, kk, vv)
 
 
+launcher = Launcher()
 config = Config()
-
-
-
-
+session = Session()
