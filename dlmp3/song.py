@@ -1,7 +1,6 @@
 import os
 import time
-from dlmp3 import config, session
-from download import Download
+
 
 class Song(object):
     """ Characteristics of a single song. """
@@ -19,7 +18,7 @@ class Song(object):
         """ Download the song. """
         return Download(self)
 
-    def make_filename(self):
+    def make_filename(self, config):
         """" Create download directory, generate filename. """
         if not os.path.exists(config.DLDIR):
             os.makedirs(config.DLDIR)
@@ -35,10 +34,10 @@ class Song(object):
         except IOError:
             pass
 
-    def get_link(self):
+    def get_link(self, search):
         """ Return the url for a song. """
         if self.source == "pleer" and not self.link:
-            wdata = session.search.get_link(self)
+            wdata = search.get_link(self)
             if wdata.get("track_link"):
                 self.link = wdata['track_link']
                 return True

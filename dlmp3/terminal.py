@@ -4,7 +4,7 @@ import unicodedata
 import sys
 import re
 from dlmp3 import config, session
-from searcher import Search
+from searcher import Search, Download
 
 
 class Color(object):
@@ -18,7 +18,6 @@ class Color(object):
 
 
 def display():
-    # import pdb; pdb.set_trace()
     """ Display the messages on the terminal screen. """
     if session.content:
         print(session.content)
@@ -57,7 +56,7 @@ def songlist_display():
     session.content = out[:(len(out)-1)] + Color.white
 
 def top(period):
-    session.search = Search("charts")
+    session.search = Search("charts", config)
     if period == "deezer" or period == "d":
         session.search.source = "deezer"
         session.message = ("%sTop tracks from Deezer%s" % (Color.green, Color.white))
@@ -73,7 +72,7 @@ def top(period):
 
 def search(term):
     """ Perform search. """
-    session.search = Search("search", term)
+    session.search = Search("search", config, term)
     term = term.replace(" +tous", "")
     session.message = "Searching for %s%s%s ..." % (Color.green, term, Color.white)
     display()
@@ -90,10 +89,10 @@ def search(term):
 def download(num):
     """ Download a track. """
     song = (session.songlist.songs[int(num) - 1])
-    download = song.download()
+    download = Download(song)
     try:
-        if not download.start(session.search):
-            session.message = Color.red + "This track can't be donwloaded from here" + Color.white
+        if not download.start(config, session.search):
+            session.message = Color.red + "This track is not available from here" + Color.white
             display()
             return
         else:
@@ -114,8 +113,6 @@ def download(num):
     except KeyboardInterrupt:
         session.message = Color.red + "Download halted" + Color.white
         song.remove_filename()
-    finally:        
-        session.content = "\n"
 
 def show_help():
     """ Print help message. """

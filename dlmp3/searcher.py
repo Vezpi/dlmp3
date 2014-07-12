@@ -1,4 +1,4 @@
-from dlmp3 import config, session
+from dlmp3 import session
 from song import Songlist
 from urllib2 import build_opener, HTTPError, URLError
 from urllib import urlencode
@@ -6,12 +6,13 @@ from HTMLParser import HTMLParser
 import socket
 import json
 import re
+import time
 
 
 class Search(object):
     """ Elements from a web search. """
 
-    def __init__(self, nature, term=False):
+    def __init__(self, nature, config, term=False):
         self.term = term
         self.web_data = ""
         self.nature = nature
@@ -176,6 +177,40 @@ class Search(object):
             return True
         else:
             return False   
+
+
+class Download(object):
+
+    def __init__(self, song):
+        self.song = song
+        self.data = None
+        self.chunksize = 16384
+        self.bytesdone = 0
+        self.t0 = time.time()
+
+    def start(self, config, search):
+        try:
+            if not self.song.get_link(search):
+                return False
+            self.song.make_filename(config)
+            self.data = search.urlopener(self.song.link)
+            self.total = int(self.data.info()['Content-Length'].strip())
+            self.outfh = open(self.song.filename, 'wb')
+            return True
+        except HTTPError:
+            return False
+
+    def get(self):
+        chunk = self.data.read(self.chunksize)
+        self.outfh.write(chunk)
+        elapsed = time.time() - self.t0
+        self.bytesdone += len(chunk)
+        self.rate = (self.bytesdone / 1024) / elapsed
+        self.eta = (self.total - self.bytesdone) / (self.rate * 1024)
+        if not chunk:
+            self.outfh.close()
+            return False
+        return True
 
 
 class Mp3DownloadParser(HTMLParser):
