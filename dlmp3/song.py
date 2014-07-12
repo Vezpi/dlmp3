@@ -4,19 +4,16 @@ from dlmp3 import config, session
 from download import Download
 
 class Song(object):
-    """  Characteristics of a single song. """
+    """ Characteristics of a single song. """
 
     def __init__(self):
-        self.track = None
-        self.artist = None
-        self.title = None
-        self.size = None
-        self.duration = None
-        self.bitrate = None
-        self.filename = None
         self.link = None
-        self.id = None
-        self.source = None
+        self.track = None
+        self.title = None
+        self.artist = None
+        self.size = None
+        self.length = None
+        self.bitrate = None
 
     def download(self):
         """ Download the song. """
@@ -31,6 +28,12 @@ class Song(object):
         elif self.source == "mp3download":
             filename = self.track + ".mp3"
         self.filename = os.path.join(config.DLDIR, filename)
+
+    def remove_filename(self):
+        try:
+            os.remove(self.filename)
+        except IOError:
+            pass
 
     def get_link(self):
         """ Return the url for a song. """
@@ -48,13 +51,24 @@ class Song(object):
 
     def duration_format(self, duration):
         """ Transform the format of the duration. """
-        self.duration = time.strftime('%M:%S', time.gmtime(int(duration)))
+        self.length = time.strftime('%M:%S', time.gmtime(int(duration)))
 
     def size_format(self, size):
         """ Transform the format of the size. """
         size = str(size)[:3]
         size = size[0:2] + " " if size[2] == "." else size
         self.size = size + ' MB'
+
+    def filter(self, raw_song):
+        # import pdb; pdb.set_trace()
+        maxi = 600
+        if not raw_song[4] == "MB":
+            return False
+        time = raw_song[2].split(":")
+        seconds = int(time[0]) * 60 + int(time[1])
+        if seconds > maxi:
+            return False
+        return True
 
 
 class Songlist(object):
@@ -64,32 +78,46 @@ class Songlist(object):
         self.songs = []
         self.raw_songs = data[0]
         self.source = data[1]
-        self.build()
+        self.build(self.source)
 
-    def build(self):
+    def build(self, source):
         """ Build a list of songs from a search querry. """
+        if source == "pleer":
+            self.categories = [["artist", "50"], ["title", "50"], ["size", "9"], ["length", "8"], ["bitrate", "7"]]
+        elif source == "mp3download":
+            self.categories = [["track", "100"], ["size", "9"], ["length", "8"]]
+        elif source == "deezer":
+            self.categories = [["artist", "50"], ["title", "50"], ["length", "8"]]
         for raw_song in self.raw_songs:
             song = Song()
-            song.source = self.source
-            if self.source == "pleer": # list of dict : keys : ['Rfile_id', 'Rsinger', 'singer', 'Rduration', 'Rsong', 'song', 'Rsource', 'source', 'Rsize', 'rate', 'link', 'file_id', 'listrate', 'duration', 'Rrate', 'size', 'Rlink']
+            song.source = source
+            if source == "pleer": # list of dict : keys : ['Rfile_id', 'Rsinger', 'singer', 'Rduration', 'Rsong', 'song', 'Rsource', 'source', 'Rsize', 'rate', 'link', 'file_id', 'listrate', 'duration', 'Rrate', 'size', 'Rlink']
                 song.artist = raw_song['singer']
                 song.title = raw_song['song']
                 song.size_format(raw_song['size'])
                 song.bitrate = raw_song['listrate']
                 song.duration_format(raw_song['duration'])
                 song.id = raw_song['link']       
-            elif self.source == "mp3download": # list of list : ['All Of Me', 'http://mp3download.pw/download.php?name=all+of+me&url=aHR0cDovL2FwaS5zb3VuZGNsb3VkLmNvbS90cmFja3MvMTEzNjYyNjc2L3N0cmVhbT9jbGllbnRfaWQ9YWU5MzEzMzc5YzNjMGZlM2Y4M2U4MGY4MzVmMGFkNGM=', '04:29', '10.29', 'MB', '']
+            elif source == "mp3download": # list of list : ['All Of Me', 'http://mp3download.pw/download.php?name=all+of+me&url=aHR0cDovL2FwaS5zb3VuZGNsb3VkLmNvbS90cmFja3MvMTEzNjYyNjc2L3N0cmVhbT9jbGllbnRfaWQ9YWU5MzEzMzc5YzNjMGZlM2Y4M2U4MGY4MzVmMGFkNGM=', '04:29', '10.29', 'MB', '']
+                if not song.filter(raw_song):
+                    continue
                 song.track = raw_song[0]
                 song.link = raw_song[1]
-                song.duration = raw_song[2]
+                song.length = raw_song[2]
                 song.size = raw_song[3] + ' ' + raw_song[4]
-            elif self.source == "deezer": # list of dict : keys : [u'album', u'artist', u'title', u'link', u'duration', u'preview', u'type', u'id']
+            elif source == "deezer": # list of dict : keys : [u'album', u'artist', u'title', u'link', u'duration', u'preview', u'type', u'id']
                 song.artist = raw_song['artist']['name']
                 song.title = raw_song['title']
                 song.duration_format(raw_song['duration'])
             self.songs.append(song)
+            
 
 
 
 
-
+  # elif session.search.source ==  "deezer":
+    #     fmtrow = "  %s %-6s%-44s %-44s%s\n"
+    #     head = (Color.underline, "Item", "Artist", "Title", Color.white)
+    # elif session.search.source ==  "mp3download":
+    #     fmtrow = "  %s %-6s %-9s %-88s %-9s%s\n"
+    #     head = (Color.underline, "Item", "Track", "Size", "Length", Color.white)

@@ -15,8 +15,8 @@ class Launcher(object):
 
     def start(self):
         """ Launch the application. """
-        if os.path.exists(session.CFFILE):
-            config.load(session.CFFILE)
+        if os.path.exists(session.config_file):
+            config.load(session.config_file)
         if self.CLI:
             import terminal
             terminal.main()
@@ -26,22 +26,14 @@ class Launcher(object):
 
 
 class Session(object):
-    """ Elements to be displayed to the user. """
+    """ Elements carryed throught the session. """
 
     def __init__(self):
-        self.CFFILE = os.path.join(config.get_config_dir(), "dlmp3.config")
+        self.config_file = os.path.join(config.get_config_dir(), "dlmp3.config")
         self.message = ""
         self.content = ""
         self.songlist = None
         self.search = None
-
-    def output(self):
-        """ Display the messages on the terminal screen. """
-        if session.content:
-            print(self.content)
-        if session.message:
-            print(self.message)
-        self.message = self.content = ""
 
 
 class Config(object):
@@ -86,7 +78,7 @@ class Config(object):
             except OSError:
                 application.message = Color.red + "Impossible de créer le répertoire " + self.get_config_dir() + Color.white
         to_save = self.getitem()
-        pickle.dump(to_save, open(session.CFFILE, "wb"), protocol=2)
+        pickle.dump(to_save, open(session.config_file, "wb"), protocol=2)
 
     # override config if config file exists
     def load(self, pfile):
@@ -94,6 +86,26 @@ class Config(object):
         saved_config = pickle.load(open(pfile, "rb"))
         for kk, vv in saved_config.items():
             setattr(self, kk, vv)
+
+    def set(self, key, val):
+        """ Set configuration variable. """
+        if key == "DLDIR":
+            valid = os.path.exists(val) and os.path.isdir(val)
+            if valid:
+                new_config = self.getitem()
+                setattr(self, key, val)
+                return True
+            else:
+                return False
+        elif key == "SOURCE":
+            if val == "pleer" or val == "mp3download":
+                new_config = self.getitem()
+                setattr(self, key, val)
+                return True
+            else:
+                return False
+        else:
+            return False
 
 
 launcher = Launcher()

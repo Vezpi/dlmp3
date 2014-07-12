@@ -1,5 +1,4 @@
 import time
-from dlmp3 import session
 
 class Download(object):
 
@@ -10,12 +9,14 @@ class Download(object):
         self.bytesdone = 0
         self.t0 = time.time()
 
-    def start(self):
+    def start(self, search):
+        if not self.song.get_link():
+            return False
         self.song.make_filename()
-        self.song.get_link()
         self.data = session.search.urlopener(self.song.link)
         self.total = int(self.data.info()['Content-Length'].strip())
         self.outfh = open(self.song.filename, 'wb')
+        return True
 
     def get(self):
         chunk = self.data.read(self.chunksize)

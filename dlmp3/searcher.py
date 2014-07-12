@@ -15,6 +15,7 @@ class Search(object):
         self.term = term
         self.web_data = ""
         self.nature = nature
+        self.source = config.SOURCE
         self.page = 1
         self.last_search_query = ""
         self.opener = build_opener()
@@ -40,7 +41,7 @@ class Search(object):
 
     def pleer_charts(self):
         """ Get charts from pleer.com. """
-        period = self.term or "w"
+        period = self.period or "w"
         periods = "_ w 3m 6m year all".split()
         period = periods.index(period)
         """ Get top music for period, returns songs list."""
@@ -72,10 +73,8 @@ class Search(object):
             wdata = self.urlopener(url).read().decode("utf8")
             songs = self.get_tracks_from_page(wdata)
         except (URLError, HTTPError) as e:
-            session.message = "no data"
             return
         if songs:
-            self.last_search_query = original_term
             return songs
         else:
             return
@@ -140,12 +139,11 @@ class Search(object):
         wdata = self.urlopener(url).read()
         parser = Mp3DownloadParser()
         parser.feed(wdata)
-        self.last_search_query = self.term
         return (parser.songlist, "mp3download")
 
     def next(self):
         """ Get next search results. """
-        if len(session.songlist.songs) == 20 and self.last_search_query:
+        if len(session.songlist.songs) == 20:
             self.page += 1
             self.do()
             return True
@@ -154,7 +152,7 @@ class Search(object):
 
     def prev(self):
         """ Get previous search results. """
-        if self.page > 1 and self.last_search_query:
+        if self.page > 1:
             self.page -= 1
             self.do()
             return True
@@ -164,12 +162,12 @@ class Search(object):
     def do(self):
         """ Launch the search. """
         if self.nature == "search":
-            if config.SOURCE == "pleer":
+            if self.source == "pleer":
                 songlist = Songlist(self.pleer())
-            elif config.SOURCE == "mp3download":
+            elif self.source == "mp3download":
                 songlist = Songlist(self.mp3download())
         elif self.nature == "charts":
-            if self.term == "deezer":
+            if self.source == "deezer":
                 songlist = Songlist(self.deezer())
             else:
                 songlist = Songlist(self.pleer())
@@ -183,8 +181,8 @@ class Search(object):
 class Mp3DownloadParser(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
-        self.in_list = False # in <li>
-        self.print_data = False # 
+        self.in_list = False
+        self.print_data = False
         self.in_track = False
         self.title = False
         self.track = []
