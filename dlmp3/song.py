@@ -77,7 +77,8 @@ class Songlist(object):
         self.songs = []
         self.raw_songs = data[0]
         self.source = data[1]
-        self.build(self.source)
+        if self.raw_songs:
+            self.build(self.source)
 
     def build(self, source):
         """ Build a list of songs from a search querry. """
