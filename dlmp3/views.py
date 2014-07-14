@@ -1,16 +1,13 @@
 # -*- coding:utf-8 -*-
 
-from runserver import server
-from flask import request, make_response, abort, redirect, render_template, session, flash
-from PIL import Image
-from StringIO import StringIO
-from datetime import date
+from flask import request, make_response, abort, redirect, render_template, flash, session as flask_session
 import time
-from dlmp3 import application, config
-import searcher
+from dlmp3 import config, session
+from runserver import server
+from searcher import Search, Download
 
 def get_song_from_list(songid):
-    return [song for song in application.songlist if song['link'] == songid]
+    return [song for song in session.songlist if song['link'] == songid]
 
 def downloading(song, filename):
     """ Download file, show status, return filename. """
@@ -40,22 +37,25 @@ def downloading(song, filename):
 
 @server.route('/', methods=['GET', 'POST'])
 def index():
-    if not 'logged_in' in session:
+    if not 'logged_in' in flask_session:
         return redirect('/login')
     else:
+        songs = []
         if request.method == 'POST':
-            if request.form['recherche']:
-                term = request.form['recherche']
-                songs = searcher.do_search(term)
+            if request.form['search']:
+                term = request.form['search']
+                session.search = Search("search", config, term)
+                session.search.do()
+                songs = session.songlist.songs
                 if songs:
                     flash(u'Résultats de la recherche pour ' + term)
                 else:
                     flash(u'Rien trouvé pour ' + term)
-        return render_template('index.html', songs=application.songlist)
+        return render_template('index.html', songs=songs)
 
 @server.route('/download=<songid>')
 def download(songid):
-    if not 'logged_in' in session:
+    if not 'logged_in' in flask_session:
         return redirect('/login')
     else:
         song = get_song_from_list(songid)
@@ -78,7 +78,7 @@ def login():
     error = None
     if request.method == 'POST':
         if request.form['PASSWORD'] == server.config['PASSWORD']:
-            session['logged_in'] = True
+            flask_session['logged_in'] = True
             flash(u'Vous êtes connecté')
             return redirect('/')
         else:

@@ -52,7 +52,6 @@ class Search(object):
         try:
             wdata = self.urlopener(url).read().decode("utf8")
         except (URLError, HTTPError) as e:
-            session.message = "no data"
             return
         match = re.search(r"<ol id=\"search-results\">[\w\W]+?<\/ol>", wdata)
         html_ol = match.group(0)
@@ -144,20 +143,21 @@ class Search(object):
 
     def next(self):
         """ Get next search results. """
-        if len(session.songlist.songs) == 20:
-            self.page += 1
-            self.do()
+        self.page += 1
+        if self.do():
             return True
         else:
+            self.page -= 1
             return False
 
     def prev(self):
         """ Get previous search results. """
         if self.page > 1:
             self.page -= 1
-            self.do()
+        if self.do():
             return True
         else:
+            self.page += 1
             return False
 
     def do(self):
