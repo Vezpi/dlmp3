@@ -51,7 +51,7 @@ def index():
                     flash(u'Résultats de la recherche pour ' + term)
                 else:
                     flash(u'Rien trouvé pour ' + term)
-        return render_template('index.html', songs=songs)
+        return render_template('content.html', songs=songs)
 
 @server.route('/download=<songid>')
 def download(songid):
@@ -67,11 +67,12 @@ def download(songid):
             flash(u'Téléchargement en erreur')
         return redirect('/')
 
-# @server.route('/top')
-# def top():
-#     if not 'logged_in' in session:
-#         return redirect('/login')
-#     else:
+@server.route('/top')
+def top():
+    if not 'logged_in' in flask_session:
+        return redirect('/login')
+    else:
+        return render_template('sidebar.html')
 
 @server.route('/login', methods=['GET', 'POST'])
 def login():

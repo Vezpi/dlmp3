@@ -55,7 +55,6 @@ class Song(object):
         self.size = size + ' MB'
 
     def filter(self, raw_song):
-        # import pdb; pdb.set_trace()
         maxi = 600
         if not raw_song[4] == "MB":
             return False
