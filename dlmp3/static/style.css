@@ -128,25 +128,3 @@ nav li:active {
 #content {
   margin-left: 30%;
 }
-
-#wrapper {
-  /* masque les débordements et englobe le menu */
-  overflow: hidden;   
-}
-#menu,#menu li {
-  /* on supprime les éventuels styles par défaut */
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  
-  /* float permet à l'élément de prendre la largeur de son contenu */
-
-}
-#menu {
-  /* on décale le menu vers la droite de la moitié de la largeur disponible */
-  left: 50%;
-}
-#menu li {
-  /* on décale chaque item vers la gauche de la moitié de la largeur du menu */
-  right: 50%;
-}
