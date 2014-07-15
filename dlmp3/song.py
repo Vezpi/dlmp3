@@ -14,10 +14,6 @@ class Song(object):
         self.length = None
         self.bitrate = None
 
-    def download(self):
-        """ Download the song. """
-        return Download(self)
-
     def make_filename(self, config):
         """" Create download directory, generate filename. """
         if not os.path.exists(config.DLDIR):
