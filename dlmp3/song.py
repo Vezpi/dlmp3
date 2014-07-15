@@ -33,7 +33,7 @@ class Song(object):
     def get_link(self, search):
         """ Return the url for a song. """
         if self.source == "pleer" and not self.link:
-            wdata = search.get_link(self)
+            wdata = search.get_pleer_link(self)
             if wdata.get("track_link"):
                 self.link = wdata['track_link']
                 return True
@@ -107,13 +107,3 @@ class Songlist(object):
                 song.duration_format(raw_song['duration'])
             self.songs.append(song)
             
-
-
-
-
-  # elif session.search.source ==  "deezer":
-    #     fmtrow = "  %s %-6s%-44s %-44s%s\n"
-    #     head = (Color.underline, "Item", "Artist", "Title", Color.white)
-    # elif session.search.source ==  "mp3download":
-    #     fmtrow = "  %s %-6s %-9s %-88s %-9s%s\n"
-    #     head = (Color.underline, "Item", "Track", "Size", "Length", Color.white)

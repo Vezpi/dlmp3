@@ -1,4 +1,3 @@
-from dlmp3 import session
 from song import Songlist
 from urllib2 import build_opener, HTTPError, URLError
 from urllib import urlencode
@@ -79,7 +78,7 @@ class Search(object):
         else:
             return
 
-    def get_link(self, song):
+    def get_pleer_link(self, song):
         url = 'http://pleer.com/site_api/files/get_url?action=download&id=%s'
         url = url % song.id
         try:
@@ -160,7 +159,7 @@ class Search(object):
             self.page += 1
             return False
 
-    def do(self):
+    def do(self, session):
         """ Launch the search. """
         if self.nature == "search":
             if self.source == "pleer":

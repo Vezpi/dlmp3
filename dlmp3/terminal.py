@@ -67,7 +67,7 @@ def top(period):
         period = periods.index(period)
         tps = "past week,past 3 months,past 6 months,past year,all time".split(",")
         session.message = ("%sTop tracks for %s%s" % (Color.green, tps[period - 1], Color.white))
-    if session.search.do():
+    if session.search.do(session):
         songlist_display()
 
 def search(term):
@@ -77,7 +77,7 @@ def search(term):
     session.message = "Searching for %s%s%s ..." % (Color.green, term, Color.white)
     display()
     try:
-        if session.search.do():
+        if session.search.do(session):
             session.message = session.search.last_search_query = "Results for %s%s%s" % (Color.green, term, Color.white)
             # session.search.last_search_query = session.message
             songlist_display()
