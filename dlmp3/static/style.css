@@ -11,7 +11,7 @@ header {
   top: 0px;
   left: 0px;
   padding: 5px 5px 5px 0px;
-  background-image: linear-gradient(#FAFAFA, #EAEAEA) !important;
+  background-image: linear-gradient(#FAFAFA, #EAEAEA);
   border-bottom: 1px solid #CACACA;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
@@ -19,6 +19,10 @@ header {
   float: left;
   width: 30%;
   height: inherit;
+  transition: 200ms ease-in-out;
+}
+#header-left:hover {
+  opacity: .5;
 }
 #header-right {
   margin-left: 30%;
@@ -36,34 +40,27 @@ header {
   margin-left: 30%;
   padding-left: 25px;
   font-family: "Trebuchet MS",Helvetica,Arial,sans-serif;
+  color: #000;
 }
 header h1 {
   font-size: 1.2em;
   margin-top: 0px;
-  margin-bottom: 0px;
-  color: #000;
+  margin-bottom: 0px;  
 }
 header h2 {
   font-size: 1em;
   font-weight: normal;
   margin-top: 0px;
   margin-bottom: 0px;
-  color: #000;
 }
 #search {
   border-right: 1px solid #DDD;
   border-width: 1px;
   border-style: solid;
   border-color: #CDCDCD #DDD #DDD;
-  -moz-border-top-colors: none;
-  -moz-border-right-colors: none;
-  -moz-border-bottom-colors: none;
-  -moz-border-left-colors: none;
   border-image: none;
   box-shadow: 0px 1px 1px #E0E0E0 inset;
   width: 85%;
-  -webkit-border-radius: 5px;
-  -moz-border-radius: 5px;
   border-radius: 5px;
   padding: 4px 5px 4px 15px;
   font-size: 16px;
@@ -80,30 +77,48 @@ header h2 {
 }
 /* SIDEBAR */
 #sidebar {
-  background-color: #F7F7F7;
   position: fixed;
   float: left;
   width: 30%;
   height: 100%;
+  background-color: #F7F7F7;
   border-top: 1px solid #CACACA;
   border-right: 1px solid #CACACA;
   left: 0;
 }
 nav {
-  height: 48px;
+  overflow: hidden; 
 }
 nav ul {
-  width: 80%;
-  height: inherit;
-  margin: auto;
-  padding-left: 0px;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  left: 50%;
+  float: left;
+  position: relative;
 }  
 nav li {
-  list-style-type: none;
-  width: 33%;
-  line-height: 48px;
-  text-align: center;
   float: left;
+  position: relative;
+  text-align: center;
+  padding: 3px;
+  margin: 15px 10px 10px 10px;
+  width: 75px;
+  right: 50%;
+  background: #555;
+  border-radius: 6px;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+  font-size: 16px;
+  font-family: Trebuchet MS,Helvetica,Arial,sans-serif;
+  transition: 200ms ease-in-out;
+}
+nav li:hover {
+  background: #222;
+}
+nav li:active {
+  background: #AAA;
 }
 #sidebar section {
   clear: both;
@@ -112,4 +127,26 @@ nav li {
 /* CONTENT */
 #content {
   margin-left: 30%;
+}
+
+#wrapper {
+  /* masque les débordements et englobe le menu */
+  overflow: hidden;   
+}
+#menu,#menu li {
+  /* on supprime les éventuels styles par défaut */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  
+  /* float permet à l'élément de prendre la largeur de son contenu */
+
+}
+#menu {
+  /* on décale le menu vers la droite de la moitié de la largeur disponible */
+  left: 50%;
+}
+#menu li {
+  /* on décale chaque item vers la gauche de la moitié de la largeur du menu */
+  right: 50%;
 }
