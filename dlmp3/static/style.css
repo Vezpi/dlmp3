@@ -6,52 +6,83 @@ body {
 header {
   position: fixed;
   width: 100%;
-  display: inline-block;
   height: 48px;
   top: 0px;
   left: 0px;
-  padding: 5px 5px 5px 0px;
+  padding: 5px;
   background-image: linear-gradient(#FAFAFA, #EAEAEA);
   border-bottom: 1px solid #CACACA;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
 }
-#header-left {
+#header-nav {
   float: left;
-  width: 30%;
   height: inherit;
-  transition: 200ms ease-in-out;
-}
-#header-left:hover {
-  opacity: .5;
-}
-#header-right {
-  margin-left: 30%;
-  width: 70%;
-  height: inherit;
-  line-height: 48px;
-  text-align: center;
-}
-#logo {
-  text-align: center;
-  width: 30%;
-  float: left;
+  width: 480px;
 }
 #title-wrapper {
-  margin-left: 30%;
-  padding-left: 25px;
+  height: inherit;
+  transition: 200ms ease-in-out; 
+}
+#title-wrapper:hover {
+  opacity: .5;
+}
+#logo {
+  height: inherit;
+  float: left;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+#title {
+  line-height: 48px;
   font-family: "Trebuchet MS",Helvetica,Arial,sans-serif;
-  color: #000;
+  color: #000; 
+  float: left;
 }
 header h1 {
-  font-size: 1.2em;
+  font-size: 1.7em;
   margin-top: 0px;
   margin-bottom: 0px;  
 }
-header h2 {
-  font-size: 1em;
-  font-weight: normal;
-  margin-top: 0px;
-  margin-bottom: 0px;
+nav ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  left: 50%;
+  position: relative;
+}  
+nav li a {
+  content: "";
+  float: right;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  padding: 11px;
+  margin: 3px;
+  width: 65px;
+  right: 50%;
+  border-radius: 4px;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: black;
+  font-size: 16px;
+  font-family: Trebuchet MS,Helvetica,Arial,sans-serif,FontAwesome;
+  transition: 200ms ease-in-out;
+  border: 1px solid transparent;
+}
+
+nav li a:hover {
+  border: 1px solid #DCDCDC;
+  background-image: linear-gradient(#F4F4F4, #E4E4E4);
+
+}
+nav li a:active {
+  border: 1px solid #CACACA;
+  background-image: linear-gradient(#F4F4F4, #E4E4E4);
+}
+#header-search {
+  float: left;
+  height: inherit;
+  line-height: 48px;
+  text-align: center;
 }
 #search {
   border-right: 1px solid #DDD;
@@ -60,10 +91,9 @@ header h2 {
   border-color: #CDCDCD #DDD #DDD;
   border-image: none;
   box-shadow: 0px 1px 1px #E0E0E0 inset;
-  width: 85%;
   border-radius: 5px;
   padding: 4px 5px 4px 15px;
-  font-size: 16px;
+/*  font-size: 16px;*/
   color: black;
 }
 /* PAGE */
@@ -85,40 +115,6 @@ header h2 {
   border-top: 1px solid #CACACA;
   border-right: 1px solid #CACACA;
   left: 0;
-}
-nav {
-  overflow: hidden; 
-}
-nav ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  left: 50%;
-  float: left;
-  position: relative;
-}  
-nav li {
-  float: left;
-  position: relative;
-  text-align: center;
-  padding: 3px;
-  margin: 15px 10px 10px 10px;
-  width: 75px;
-  right: 50%;
-  background: #555;
-  border-radius: 6px;
-  box-shadow: rgba(0,0,0,1) 0 1px 0;
-  text-shadow: rgba(0,0,0,.4) 0 1px 0;
-  color: white;
-  font-size: 16px;
-  font-family: Trebuchet MS,Helvetica,Arial,sans-serif;
-  transition: 200ms ease-in-out;
-}
-nav li:hover {
-  background: #222;
-}
-nav li:active {
-  background: #AAA;
 }
 #sidebar section {
   clear: both;

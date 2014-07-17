@@ -4,48 +4,44 @@
     <meta charset="utf-8"/>
     <meta name="author" content="Etienne Girault"/>
     <title>DLMP3</title>
-    <link rel=stylesheet href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}" width="48">
   </head>
   <body>
     <header>
-    <!-- En-tête -->
-      <a href="/">
-        <div id="header-left">
+      <div id="header-nav">
+        <a id="title-wrapper" href="/">
           <div id="logo">
             <img src="{{ url_for('static', filename='images/logo.png') }}"/>
           </div>
-          <div id="title-wrapper">
+          <div id="title">
             <h1>DLMP3</h1>
-            {% block title %}{% endblock %}
+            <!-- {% block title %}{% endblock %} -->
           </div>
-        </div>
-      </a>
-      <div id="header-right">
+        </a>
+        <nav>
+          <ul>
+            <li>
+              <a href="/">DL</a>
+            </li>
+            <li>
+              <a href="top">Top</a>
+            </li>
+            <li>
+              <a href="config">Config</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+      <div id="header-search">
         {% block head %}{% endblock %}
       </div>
     </header>
     <div id="page">
-      <div id="sidebar">
-        <nav>
-        <!-- Barre de navigation -->
-          <ul>
-            <a href="/list">
-              <li>DL</li>
-            </a>
-            <a href="/top">
-              <li>Top</li>
-            </a>
-            <a href="/conf">
-              <li>Config</li>
-            </a>
-          </ul>
-        </nav>
-        <section>
+      <aside id="sidebar">
           Je suis la sidebar
           {% block sidebar %}{% endblock %}
-        </section>
-      </div>
+      </aside>
       <section id="content">
         {% for message in get_flashed_messages() %}
           <div class=flash>{{ message }}</div>

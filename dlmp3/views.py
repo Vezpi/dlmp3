@@ -45,7 +45,7 @@ def index():
             if request.form['search']:
                 term = request.form['search']
                 session.search = Search("search", config, term)
-                session.search.do()
+                session.search.do(session)
                 songs = session.songlist.songs
                 if songs:
                     flash(u'Résultats de la recherche pour ' + term)
