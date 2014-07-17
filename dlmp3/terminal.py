@@ -159,13 +159,13 @@ def nextprev(np):
     """ Get next / previous search results. """
     if session.search:
         if np == "n":
-            if session.search.next():
+            if session.search.next(session):
                 session.message = session.search.last_search_query + " : page %s%s%s" % (Color.green, session.search.page, Color.white)
                 songlist_display()
             else:
                 session.message = "No more songs to display"
         if np == "p":
-            if session.search.prev():
+            if session.search.prev(session):
                 session.message = session.search.last_search_query + " : page %s%s%s" % (Color.green, session.search.page, Color.white)
                 songlist_display()
             else:

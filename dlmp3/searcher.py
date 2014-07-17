@@ -140,20 +140,20 @@ class Search(object):
         parser.feed(wdata)
         return (parser.songlist, "mp3download")
 
-    def next(self):
+    def next(self, session):
         """ Get next search results. """
         self.page += 1
-        if self.do():
+        if self.do(session):
             return True
         else:
             self.page -= 1
             return False
 
-    def prev(self):
+    def prev(self, session):
         """ Get previous search results. """
         if self.page > 1:
             self.page -= 1
-        if self.do():
+        if self.do(session):
             return True
         else:
             self.page += 1
